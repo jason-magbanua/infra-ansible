@@ -1,0 +1,62 @@
+---
+# LEMP stack installation
+# - Nginx + PHP-FPM + MariaDB
+# - Ubuntu 24.04
+# - Safe to re-run
+
+- name: Install LEMP stack
+  hosts: ubuntu_zfs_wp_hosts
+  become: true
+
+  # Stack version choices
+  vars:
+    php_version: "8.3"
+
+  tasks:
+    # Configure APT proxy (apt-cacher) - disalbed for now due to invalid signature errors
+#    - name: Configure APT proxy
+#      ansible.builtin.copy:
+#        dest: /etc/apt/apt.conf.d/01-apt-cacher
+#        content: 'Acquire::HTTP::Proxy "http://172.16.8.40:3142";'
+#        owner: root
+#        group: root
+#        mode: "0644"
+
+     # Keep apt metadata fresh
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    # Core packages for WordPress
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - nginx
+          - php{{ php_version }}-fpm
+          - php{{ php_version }}-cli
+          - php{{ php_version }}-mysql
+          - mariadb-server
+          - python3-pymysql
+        state: present
+
+    # Ensure web server is available after reboot
+    - name: Ensure Nginx is running and enabled
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+
+    # PHP runtime for Nginx
+    - name: Ensure PHP-FPM is running and enabled
+      ansible.builtin.service:
+        name: php{{ php_version }}-fpm
+        state: started
+        enabled: true
+
+    # Database service for WordPress
+    - name: Ensure MariaDB is running and enabled
+      ansible.builtin.service:
+        name: mariadb
+        state: started
+        enabled: true

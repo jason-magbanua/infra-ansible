@@ -1,0 +1,66 @@
+---
+# Proxmox VM provisioning
+# - Clone from cloud-init template
+# - Auto-generate VMID
+# - Static IP via cloud-init
+# - Safe to re-run (won’t re-clone same VMID)
+
+- name: Create VM from Proxmox template
+  hosts: proxmox
+  become: true
+  gather_facts: false
+
+  # Proxmox / network defaults
+  vars:
+    template_vmid: 9000
+    netmask: 24
+    gateway: 172.16.8.1
+    disk_resize: +20G
+
+  tasks:
+    # Ask Proxmox for the next available VMID
+    - name: Get next free VMID
+      ansible.builtin.command: pvesh get /cluster/nextid
+      register: next_vmid
+      changed_when: false
+
+    # Store VMID for later tasks
+    - name: Set VMID fact
+      ansible.builtin.set_fact:
+        vmid: "{{ next_vmid.stdout | trim }}"
+
+    # Log chosen VMID for visibility
+    - name: Show chosen VMID
+      ansible.builtin.debug:
+        msg: "Creating VM with VMID {{ vmid }}"
+
+    # Clone the template into a new VM
+    - name: Clone VM from template
+      ansible.builtin.command: >
+        qm clone {{ template_vmid }} {{ vmid }}
+        --name {{ vm_name }}
+        --full
+      args:
+        creates: "/etc/pve/qemu-server/{{ vmid }}.conf"
+
+    # Configure bridge interface using cloud-init
+    - name: Configure bridge interface
+      ansible.builtin.command: >
+        qm set {{ vmid }}
+        --net0 virtio,bridge=vmbr1
+
+    # Configure static IP using cloud-init
+    - name: Configure VM network
+      ansible.builtin.command: >
+        qm set {{ vmid }}
+        --ipconfig0 ip={{ vm_ip }}/{{ netmask }},gw={{ gateway }}
+
+    # Resize root disk after clone
+    - name: Resize VM disk
+      ansible.builtin.command: >
+        qm resize {{ vmid }} scsi0 {{ disk_resize }}
+
+    # Boot the VM
+    - name: Start VM
+      ansible.builtin.command: >
+        qm start {{ vmid }}

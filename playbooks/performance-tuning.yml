@@ -1,0 +1,67 @@
+---
+- name: Static Nginx + PHP-FPM tuning (vCPU + RAM based)
+  hosts: ubuntu_zfs_wp_hosts
+  become: true
+  gather_facts: true
+
+  vars:
+    php_version: "8.3"
+
+  tasks:
+
+    - name: Select tuning based on vCPU and RAM
+      set_fact:
+        php_pm_max_children: >-
+          {% if (ansible_processor_vcpus | int) == 1 and (ansible_memtotal_mb | int) <= 600 %}
+          5
+          {% elif (ansible_processor_vcpus | int) == 1 and (ansible_memtotal_mb | int) <= 1200 %}
+          8
+          {% elif (ansible_processor_vcpus | int) == 2 and (ansible_memtotal_mb | int) <= 2500 %}
+          15
+          {% elif (ansible_processor_vcpus | int) == 2 and (ansible_memtotal_mb | int) > 2500 %}
+          25
+          {% else %}
+          6
+          {% endif %}
+
+        nginx_worker_processes: >-
+          {% if (ansible_processor_vcpus | int) > 1 %}
+          auto
+          {% else %}
+          1
+          {% endif %}
+
+    - name: Remove default PHP-FPM pool config
+      file:
+        path: /etc/php/{{ php_version }}/fpm/pool.d/www.conf
+        state: absent
+      notify: Restart php-fpm
+
+    - name: Deploy managed PHP-FPM pool config
+      template:
+        src: templates/php-fpm-www.conf.j2
+        dest: /etc/php/{{ php_version }}/fpm/pool.d/www.conf
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart php-fpm
+
+    - name: Deploy Nginx global config
+      template:
+        src: templates/nginx-adaptive.conf.j2
+        dest: /etc/nginx/nginx.conf
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload nginx
+
+  handlers:
+    - name: Restart php-fpm
+      service:
+        name: php{{ php_version }}-fpm
+        state: restarted
+
+    - name: Reload nginx
+      service:
+        name: nginx
+        state: reloaded

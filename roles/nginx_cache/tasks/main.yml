@@ -1,0 +1,13 @@
+- name: Create FastCGI cache directory
+  file:
+    path: /var/cache/nginx
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+
+- name: Deploy WordPress vhost
+  template:
+    src: nginx-wordpress.conf.j2
+    dest: /etc/nginx/sites-available/{{ wordpress_domain }}
+  notify: Restart Nginx

@@ -1,0 +1,32 @@
+fastcgi_cache_path /var/cache/nginx levels=1:2 keys_zone=WORDPRESS:100m inactive=60m;
+fastcgi_cache_key "$scheme$request_method$host$request_uri";
+
+server {
+    server_name {{ wordpress_domain }};
+    root /var/www/{{ wordpress_domain }};
+
+    set $skip_cache 0;
+
+    # Do not cache POST
+    if ($request_method = POST) {
+        set $skip_cache 1;
+    }
+
+    # Do not cache logged-in users
+    if ($http_cookie ~* "wordpress_logged_in|woocommerce_items_in_cart|woocommerce_cart_hash") {
+        set $skip_cache 1;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/run/php/php{{ php_version }}-fpm.sock;
+
+        fastcgi_cache WORDPRESS;
+        fastcgi_cache_valid 200 60m;
+        fastcgi_cache_bypass $skip_cache;
+        fastcgi_no_cache $skip_cache;
+
+        add_header X-FastCGI-Cache $upstream_cache_status;
+
+        include fastcgi_params;
+    }
+}

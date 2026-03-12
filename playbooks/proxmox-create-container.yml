@@ -1,0 +1,126 @@
+---
+# Proxmox LXC provisioning
+# - Auto CTID
+# - DHCP networking
+# - Detect assigned IP
+# - Create ansible + ubuntu users
+# - Install SSH keys
+# - Configure passwordless sudo
+# - Start container
+
+- name: Provision LXC container
+  hosts: proxmox
+  become: true
+  gather_facts: false
+
+  vars:
+    storage: local-ssd
+    template: local:vztmpl/ubuntu-24.04-standard_24.04-2_amd64.tar.zst
+    swap: 0
+    bridge: vmbr1
+    subnet: 24
+    gateway: 172.16.8.1
+    unprivileged: 1
+
+  tasks:
+
+    # Get new CTID
+    - name: Get next CTID
+      command: pvesh get /cluster/nextid
+      register: next_ctid
+      changed_when: false
+
+    - set_fact:
+        ctid: "{{ next_ctid.stdout | trim }}"
+
+    - debug:
+        msg: "Creating LXC {{ ctid }}"
+
+    # Create container
+    - name: Create container
+      command: >
+        pct create {{ ctid }} {{ template }}
+        --hostname {{ hostname }}
+        --storage {{ storage }}
+        --rootfs {{ storage }}:{{ disk_size }}
+        --cores {{ cores }}
+        --memory {{ memory }}
+        --swap {{ swap }}
+        --net0 name=eth0,bridge={{ bridge }},ip={{ ipv4 }}/{{ subnet }},gw={{ gateway }}
+        --unprivileged {{ unprivileged }}
+        --features nesting=1
+      args:
+        creates: "/etc/pve/lxc/{{ ctid }}.conf"
+
+    - name: Start container
+      command: pct start {{ ctid }}
+
+    # Wait for DHCP
+    - name: Wait for IP
+      command: pct exec {{ ctid }} -- hostname -I
+      register: container_ip_output
+      retries: 10
+      delay: 3
+      until: container_ip_output.stdout | trim != ""
+      changed_when: false
+
+    - set_fact:
+        container_ip: "{{ container_ip_output.stdout.split()[0] }}"
+
+    - debug:
+        msg: "IP: {{ container_ip }}"
+
+    # Read SSH keys
+    - name: Read ansible key
+      slurp:
+        src: /root/.ssh/id_ed25519_ansible.pub
+      register: ansible_pubkey
+
+    - name: Read ubuntu key
+      slurp:
+        src: /root/.ssh/root-sshkey.rsa.pub
+      register: ubuntu_pubkey
+
+    # Create ansible user
+    - name: Check ansible user
+      command: pct exec {{ ctid }} -- id ansible
+      register: ansible_user_check
+      failed_when: false
+      changed_when: false
+
+    - name: Add ansible user
+      command: pct exec {{ ctid }} -- useradd -m -s /bin/bash ansible
+      when: ansible_user_check.rc != 0
+
+    - name: Setup ansible SSH + sudo
+      command: >
+        pct exec {{ ctid }} -- bash -c "
+        mkdir -p /home/ansible/.ssh &&
+        echo '{{ ansible_pubkey.content | b64decode | trim }}' > /home/ansible/.ssh/authorized_keys &&
+        chown -R ansible:ansible /home/ansible/.ssh &&
+        chmod 700 /home/ansible/.ssh &&
+        chmod 600 /home/ansible/.ssh/authorized_keys &&
+        echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/99-ansible &&
+        chmod 440 /etc/sudoers.d/99-ansible"
+
+    # Create ubuntu user
+    - name: Check ubuntu user
+      command: pct exec {{ ctid }} -- id ubuntu
+      register: ubuntu_user_check
+      failed_when: false
+      changed_when: false
+
+    - name: Add ubuntu user
+      command: pct exec {{ ctid }} -- useradd -m -s /bin/bash ubuntu
+      when: ubuntu_user_check.rc != 0
+
+    - name: Setup ubuntu SSH + sudo
+      command: >
+        pct exec {{ ctid }} -- bash -c "
+        mkdir -p /home/ubuntu/.ssh &&
+        echo '{{ ubuntu_pubkey.content | b64decode | trim }}' > /home/ubuntu/.ssh/authorized_keys &&
+        chown -R ubuntu:ubuntu /home/ubuntu/.ssh &&
+        chmod 700 /home/ubuntu/.ssh &&
+        chmod 600 /home/ubuntu/.ssh/authorized_keys &&
+        echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/99-ubuntu &&
+        chmod 440 /etc/sudoers.d/99-ubuntu"

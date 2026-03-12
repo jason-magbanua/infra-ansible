@@ -1,0 +1,143 @@
+---
+# WordPress provisioning
+# - One site per server
+# - Auto-generate DB credentials on first run
+# - Safe to re-run (will not replace credentials)
+
+- name: Install and configure WordPress
+  hosts: ubuntu_zfs_wp_hosts
+  become: true
+
+  # Performance layers
+  roles:
+    - mysql_tuning
+    - php_tuning
+    - redis
+    - nginx_cache
+
+  # Static stack decisions
+  vars:
+    wp_root: /var/www/html
+    php_version: "8.3"
+    wp_site_url: "{{ inventory_hostname }}"
+
+  pre_tasks:
+    # Check for existing wp-config.php
+    - name: Check for existing wp-config.php
+      ansible.builtin.stat:
+        path: "{{ wp_root }}/wp-config.php"
+      register: wp_config_stat
+
+    # Generate DB credentials only on first run
+    - name: Generate WordPress DB credentials
+      ansible.builtin.set_fact:
+        wp_db_name: "wp_{{ lookup('password', '/dev/null length=8 chars=ascii_lowercase') }}"
+        wp_db_user: "wpuser_{{ lookup('password', '/dev/null length=6 chars=ascii_lowercase') }}"
+        wp_db_password: "{{ lookup('password', '/dev/null length=24 chars=ascii_letters,digits') }}"
+      when: not wp_config_stat.stat.exists
+
+  tasks:
+    # PHP extensions required by WordPress
+    - name: Install PHP extensions
+      ansible.builtin.apt:
+        name:
+          - php{{ php_version }}
+          - php{{ php_version }}-fpm
+          - php{{ php_version }}-mysql
+          - php{{ php_version }}-curl
+          - php{{ php_version }}-gd
+          - php{{ php_version }}-mbstring
+          - php{{ php_version }}-xml
+          - php{{ php_version }}-zip
+        state: present
+        update_cache: yes
+
+    # Install wp-cli (WordPress CLI tool)
+    - name: Download wp-cli
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+        dest: /usr/local/bin/wp
+        mode: "0755"
+
+    # Ensure document root exists
+    - name: Ensure WordPress directory exists
+      ansible.builtin.file:
+        path: "{{ wp_root }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: "0755"
+
+    # Download WordPress (first run only)
+    - name: Download and extract WordPress
+      ansible.builtin.unarchive:
+        src: https://wordpress.org/latest.tar.gz
+        dest: "{{ wp_root }}"
+        remote_src: yes
+        extra_opts: [--strip-components=1]
+        creates: "{{ wp_root }}/wp-settings.php"
+
+    # Fix ownership
+    - name: Set WordPress ownership
+      ansible.builtin.file:
+        path: "{{ wp_root }}"
+        owner: www-data
+        group: www-data
+        recurse: yes
+
+    # Create database (first run only)
+    - name: Create WordPress database
+      community.mysql.mysql_db:
+        name: "{{ wp_db_name }}"
+        state: present
+        login_unix_socket: /run/mysqld/mysqld.sock
+      when: not wp_config_stat.stat.exists
+
+    # Create DB user (first run only)
+    - name: Create WordPress database user
+      community.mysql.mysql_user:
+        name: "{{ wp_db_user }}"
+        password: "{{ wp_db_password }}"
+        priv: "{{ wp_db_name }}.*:ALL"
+        host: localhost
+        state: present
+        login_unix_socket: /run/mysqld/mysqld.sock
+      when: not wp_config_stat.stat.exists
+
+    # Write wp-config.php (first run only)
+    - name: Deploy wp-config.php
+      ansible.builtin.template:
+        src: templates/wp-config.php.j2
+        dest: "{{ wp_root }}/wp-config.php"
+        owner: www-data
+        group: www-data
+        mode: "0644"
+      when: not wp_config_stat.stat.exists
+
+    # Deploy WordPress Nginx vhost
+    - name: Deploy Nginx WordPress site config
+      ansible.builtin.template:
+        src: templates/nginx-wordpress.conf.j2
+        dest: /etc/nginx/sites-available/wordpress
+        mode: "0644"
+      notify: Reload Nginx
+
+    # Enable WordPress Nginx site
+    - name: Enable WordPress Nginx site
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/wordpress
+        dest: /etc/nginx/sites-enabled/wordpress
+        state: link
+
+    # Disable default Nginx site
+    - name: Disable default Nginx site
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: Reload Nginx
+
+  handlers:
+    - name: Reload Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded
