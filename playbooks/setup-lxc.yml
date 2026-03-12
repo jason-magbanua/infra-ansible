@@ -1,0 +1,162 @@
+---
+- name: Setup LXD container host
+  hosts: proxmox_vms
+  become: true
+
+  vars:
+    lxd_storage_pool: lxdpool
+    zfs_dataset: user-data/lxc
+    ubuntu_image_alias: ubuntu-24.04
+    lxd_network: lxdbr0
+    lxd_network_ipv4: 10.200.10.1/24
+
+  tasks:
+
+    - name: Install snapd
+      apt:
+        name: snapd
+        state: present
+        update_cache: true
+
+    - name: Install LXD
+      community.general.snap:
+        name: lxd
+        state: present
+
+    - name: Wait for LXD daemon
+      command: lxd waitready
+      changed_when: false
+
+    ################################################
+    # STORAGE POOL
+    ################################################
+
+    - name: Get existing LXD storage pools
+      command: lxc storage list
+      register: lxd_pools
+      changed_when: false
+      failed_when: false
+
+    - name: Create ZFS storage pool
+      command:
+        argv:
+          - lxc
+          - storage
+          - create
+          - "{{ lxd_storage_pool }}"
+          - zfs
+          - "source={{ zfs_dataset }}"
+      when: lxd_storage_pool not in lxd_pools.stdout
+
+    ################################################
+    # DEFAULT PROFILE ROOT DISK
+    ################################################
+
+    - name: Get default profile
+      command: lxc profile show default
+      register: default_profile
+      changed_when: false
+
+    - name: Attach root disk to default profile
+      command:
+        argv:
+          - lxc
+          - profile
+          - device
+          - add
+          - default
+          - root
+          - disk
+          - path=/
+          - "pool={{ lxd_storage_pool }}"
+      when: lxd_storage_pool not in default_profile.stdout
+
+    ################################################
+    # NETWORK
+    ################################################
+
+    - name: Get existing LXD networks
+      command: lxc network list
+      register: lxd_networks
+      changed_when: false
+
+    - name: Create LXD bridge network
+      command:
+        argv:
+          - lxc
+          - network
+          - create
+          - "{{ lxd_network }}"
+          - "ipv4.address={{ lxd_network_ipv4 }}"
+          - "ipv4.nat=true"
+          - "ipv6.address=none"
+      when: lxd_network not in lxd_networks.stdout
+
+    - name: Get default profile again
+      command: lxc profile show default
+      register: default_profile_net
+      changed_when: false
+
+    - name: Attach network to default profile
+      command:
+        argv:
+          - lxc
+          - profile
+          - device
+          - add
+          - default
+          - eth0
+          - nic
+          - "nictype=bridged"
+          - "parent={{ lxd_network }}"
+          - "name=eth0"
+      when: lxd_network not in default_profile_net.stdout
+
+    ################################################
+    # PRELOAD UBUNTU IMAGE
+    ################################################
+
+    - name: Check local images
+      command: lxc image list
+      register: local_images
+      changed_when: false
+
+    - name: Download Ubuntu 24.04 container image
+      command:
+        argv:
+          - lxc
+          - image
+          - copy
+          - ubuntu:24.04
+          - local:
+          - --alias
+          - "{{ ubuntu_image_alias }}"
+      when: ubuntu_image_alias not in local_images.stdout
+
+    ################################################
+    # DEBUG OUTPUT
+    ################################################
+
+    - name: Show storage pools
+      command: lxc storage list
+      register: storage_output
+      changed_when: false
+
+    - debug:
+        var: storage_output.stdout
+
+    - name: Show networks
+      command: lxc network list
+      register: network_output
+      changed_when: false
+
+    - debug:
+        var: network_output.stdout
+
+    - name: Show images
+      command: lxc image list
+      register: image_output
+      changed_when: false
+
+    - debug:
+        var: image_output.stdout

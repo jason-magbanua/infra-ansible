@@ -1,0 +1,70 @@
+---
+- name: Setup ZFS mirror storage for LXC containers
+  hosts: proxmox_vms
+  become: true
+
+  vars:
+    zfs_pool_name: user-data
+    zfs_mountpoint: /user-data
+    zfs_disks:
+      - /dev/sdb
+      - /dev/sdc
+
+  tasks:
+
+    - name: Install ZFS utilities
+      apt:
+        name: zfsutils-linux
+        state: present
+        update_cache: yes
+
+    - name: Limit ZFS ARC cache for low memory VM
+      copy:
+        dest: /etc/modprobe.d/zfs.conf
+        content: |
+          options zfs zfs_arc_max=1073741824
+      notify: update initramfs
+
+    - name: Ensure mount directory exists
+      file:
+        path: "{{ zfs_mountpoint }}"
+        state: directory
+        mode: "0755"
+
+    - name: Check if pool exists
+      command: zpool list -H {{ zfs_pool_name }}
+      register: zpool_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create ZFS pool (mirror)
+      command: >
+        zpool create
+        -o ashift=12
+        -O compression=lz4
+        -O atime=off
+        -O xattr=sa
+        -O acltype=posixacl
+        -O normalization=formD
+        -O mountpoint={{ zfs_mountpoint }}
+        {{ zfs_pool_name }}
+        mirror {{ zfs_disks | join(' ') }}
+      when: zpool_check.rc != 0
+
+    - name: Create dataset for containers
+      command: >
+        zfs create
+        -o compression=lz4
+        -o atime=off
+        -o recordsize=128K
+        {{ zfs_pool_name }}/lxc
+      args:
+        creates: "/{{ zfs_pool_name }}/lxc"
+
+    - name: Ensure ZFS mounts everything
+      command: zfs mount -a
+
+  handlers:
+
+    - name: update initramfs
+      command: update-initramfs -u
