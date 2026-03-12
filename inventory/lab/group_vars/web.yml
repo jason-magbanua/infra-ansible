@@ -1,4 +1,0 @@
-mysql_buffer_pool_size: 1G
-mysql_buffer_pool_instances: 4
-php_version: "8.3"
-wordpress_domain: mywpsite.local
