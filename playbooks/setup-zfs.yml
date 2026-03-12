@@ -51,19 +51,6 @@
         mirror {{ zfs_disks | join(' ') }}
       when: zpool_check.rc != 0
 
-    - name: Create dataset for containers
-      command: >
-        zfs create
-        -o compression=lz4
-        -o atime=off
-        -o recordsize=128K
-        {{ zfs_pool_name }}/lxc
-      args:
-        creates: "/{{ zfs_pool_name }}/lxc"
-
-    - name: Ensure ZFS mounts everything
-      command: zfs mount -a
-
   handlers:
 
     - name: update initramfs

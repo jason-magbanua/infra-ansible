@@ -5,7 +5,7 @@
 
   vars:
     lxd_storage_pool: lxdpool
-    zfs_dataset: user-data/lxc
+    zfs_dataset: user-data
     ubuntu_image_alias: ubuntu-24.04
     lxd_network: lxdbr0
     lxd_network_ipv4: 10.200.10.1/24
@@ -128,7 +128,7 @@
           - image
           - copy
           - ubuntu:24.04
-          - local:
+          - "local:"
           - --alias
           - "{{ ubuntu_image_alias }}"
       when: ubuntu_image_alias not in local_images.stdout
