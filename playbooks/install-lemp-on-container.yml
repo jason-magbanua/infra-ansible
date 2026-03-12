@@ -1,0 +1,73 @@
+---
+# LEMP stack installation inside LXD container
+# - Nginx + PHP-FPM + MariaDB
+# - Ubuntu 24.04
+# - Minimal packages required for WordPress
+# - Executed through the LXD host using `lxc exec`
+# - container_name must be provided at runtime
+
+- name: Install LEMP stack in LXD container
+  hosts: proxmox_vms
+  become: true
+  gather_facts: false
+
+  vars:
+    php_version: "8.3"
+
+  pre_tasks:
+
+    - name: Ensure container_name variable is provided
+      ansible.builtin.assert:
+        that:
+          - container_name is defined
+          - container_name | length > 0
+        fail_msg: >
+          You must provide the container name.
+          Example:
+          ansible-playbook playbooks/lemp_container.yml -e "container_name=example-com"
+
+  tasks:
+
+    - name: Check container status
+      ansible.builtin.command: >
+        lxc info {{ container_name }}
+      register: container_status
+      changed_when: false
+
+    - name: Update apt cache inside container
+      ansible.builtin.command: >
+        lxc exec {{ container_name }} -- bash -c "apt-get update"
+      changed_when: false
+
+    - name: Install required packages
+      ansible.builtin.command: >
+        lxc exec {{ container_name }} -- bash -c
+        "DEBIAN_FRONTEND=noninteractive apt-get install -y
+        nginx
+        php{{ php_version }}-fpm
+        php{{ php_version }}-cli
+        php{{ php_version }}-mysql
+        mariadb-server
+        python3-pymysql"
+
+    - name: Ensure Nginx is running and enabled
+      ansible.builtin.command: >
+        lxc exec {{ container_name }} -- systemctl enable --now nginx
+
+    - name: Ensure PHP-FPM is running and enabled
+      ansible.builtin.command: >
+        lxc exec {{ container_name }} -- systemctl enable --now php{{ php_version }}-fpm
+
+    - name: Ensure MariaDB is running and enabled
+      ansible.builtin.command: >
+        lxc exec {{ container_name }} -- systemctl enable --now mariadb
+
+    - name: Check nginx status
+      ansible.builtin.command: >
+        lxc exec {{ container_name }} -- systemctl is-active nginx
+      register: nginx_status
+      changed_when: false
+
+    - name: Display nginx status
+      ansible.builtin.debug:
+        msg: "Nginx status inside container: {{ nginx_status.stdout }}"
