@@ -1,0 +1,4 @@
+[wp_containers]
+example-com ansible_connection=community.general.lxd
+example-net ansible_connection=community.general.lxd
+example-org ansible_connection=community.general.lxd

@@ -1,0 +1,193 @@
+---
+- name: Provision WordPress container via LXD
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+
+    lxd_remote: wp-host1
+    container_image: ubuntu-24.04
+    container_disk: 5GB
+
+    php_version: "8.3"
+    wp_root: /var/www/html
+
+  pre_tasks:
+
+    - name: Ensure required variables are provided
+      ansible.builtin.fail:
+        msg: "container_name and domain must be provided"
+      when:
+        - container_name | default("") == ""
+        - domain | default("") == ""
+
+############################################################
+# Container lifecycle
+############################################################
+
+  tasks:
+
+    - name: Check container existence
+      command: lxc info {{ lxd_remote }}:{{ container_name }}
+      register: container_info
+      failed_when: false
+      changed_when: false
+
+    - name: Create container
+      command: >
+        lxc launch {{ lxd_remote }}:{{ container_image }}
+        {{ lxd_remote }}:{{ container_name }}
+      when: container_info.rc != 0
+
+    - name: Ensure container running
+      command: lxc start {{ lxd_remote }}:{{ container_name }}
+      register: start_result
+      failed_when: false
+      changed_when: "'started' in start_result.stdout"
+
+    - name: Ensure root disk size
+      command: >
+        lxc config device set
+        {{ lxd_remote }}:{{ container_name }}
+        root size={{ container_disk }}
+
+    - name: Wait for cloud-init
+      command: >
+        lxc exec {{ lxd_remote }}:{{ container_name }} --
+        cloud-init status --wait
+
+############################################################
+# Detect WordPress
+############################################################
+
+    - name: Detect existing WordPress installation
+      command: >
+        lxc exec {{ lxd_remote }}:{{ container_name }} --
+        test -f {{ wp_root }}/wp-config.php
+      register: wp_installed
+      failed_when: false
+      changed_when: false
+
+############################################################
+# Install packages
+############################################################
+
+    - name: Install required packages
+      command: >
+        lxc exec {{ lxd_remote }}:{{ container_name }} --
+        apt-get install -y
+        nginx
+        mariadb-server
+        php{{ php_version }}
+        php{{ php_version }}-fpm
+        php{{ php_version }}-mysql
+        php{{ php_version }}-curl
+        php{{ php_version }}-gd
+        php{{ php_version }}-mbstring
+        php{{ php_version }}-xml
+        php{{ php_version }}-zip
+        unzip
+        curl
+
+############################################################
+# WordPress install
+############################################################
+
+    - name: Download WordPress
+      command: >
+        lxc exec {{ lxd_remote }}:{{ container_name }} --
+        bash -c "cd /tmp && curl -L -O https://wordpress.org/latest.tar.gz && tar -xzf latest.tar.gz"
+      when: wp_installed.rc != 0
+
+    - name: Install WordPress files
+      command: >
+        lxc exec {{ lxd_remote }}:{{ container_name }} --
+        bash -c "mkdir -p {{ wp_root }} && cp -r /tmp/wordpress/* {{ wp_root }}"
+      when: wp_installed.rc != 0
+
+    - name: Ensure WordPress ownership
+      command: >
+        lxc exec {{ lxd_remote }}:{{ container_name }} --
+        chown -R www-data:www-data {{ wp_root }}
+
+############################################################
+# Database
+############################################################
+
+    - name: Generate DB credentials
+      ansible.builtin.set_fact:
+        wp_db_name: "wp_{{ lookup('password', '/dev/null length=12 chars=ascii_lowercase') }}"
+        wp_db_user: "wp_{{ lookup('password', '/dev/null length=12 chars=ascii_lowercase') }}"
+        wp_db_password: "{{ lookup('password', '/dev/null length=28 chars=ascii_letters,digits') }}"
+      when: wp_installed.rc != 0
+
+    - name: Create database
+      command: >
+        lxc exec {{ lxd_remote }}:{{ container_name }} --
+        mysql -e "CREATE DATABASE {{ wp_db_name }}"
+      when: wp_installed.rc != 0
+
+    - name: Create database user
+      command: >
+        lxc exec {{ lxd_remote }}:{{ container_name }} --
+        mysql -e "
+        CREATE USER '{{ wp_db_user }}'@'localhost'
+        IDENTIFIED BY '{{ wp_db_password }}';
+        GRANT ALL PRIVILEGES ON {{ wp_db_name }}.* TO
+        '{{ wp_db_user }}'@'localhost';
+        FLUSH PRIVILEGES;"
+      when: wp_installed.rc != 0
+
+############################################################
+# WordPress configuration
+############################################################
+
+    - name: Render wp-config
+      template:
+        src: templates/wp-config.php.j2
+        dest: "/tmp/wp-config.php"
+      when: wp_installed.rc != 0
+
+    - name: Upload wp-config
+      command: >
+        lxc file push --uid 33 --gid 33
+        /tmp/wp-config.php
+        {{ lxd_remote }}:{{ container_name }}{{ wp_root }}/wp-config.php
+      when: wp_installed.rc != 0
+
+############################################################
+# Nginx configuration
+############################################################
+
+    - name: Render nginx config
+      template:
+        src: templates/nginx-wordpress.conf.j2
+        dest: "/tmp/nginx.conf"
+
+    - name: Upload nginx config
+      command: >
+        lxc file push --uid 0 --gid 0
+        /tmp/nginx.conf
+        {{ lxd_remote }}:{{ container_name }}/etc/nginx/sites-available/{{ domain }}
+
+    - name: Enable nginx site
+      command: >
+        lxc exec {{ lxd_remote }}:{{ container_name }} --
+        ln -sf /etc/nginx/sites-available/{{ domain }}
+        /etc/nginx/sites-enabled/{{ domain }}
+
+    - name: Remove default nginx site
+      command: >
+        lxc exec {{ lxd_remote }}:{{ container_name }} --
+        rm -f /etc/nginx/sites-enabled/default
+
+    - name: Test nginx config
+      command: >
+        lxc exec {{ lxd_remote }}:{{ container_name }} --
+        nginx -t
+
+    - name: Reload nginx
+      command: >
+        lxc exec {{ lxd_remote }}:{{ container_name }} --
+        systemctl reload nginx
