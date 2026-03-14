@@ -8,7 +8,7 @@
 
     lxd_remote: wp-host1
     container_image: ubuntu-24.04
-    container_disk: 5GB
+    container_disk: 8GB
 
     php_version: "8.3"
     wp_root: /var/www/html
@@ -16,17 +16,17 @@
   pre_tasks:
 
     - name: Ensure required variables are provided
-      ansible.builtin.fail:
+      fail:
         msg: "container_name and domain must be provided"
       when:
         - container_name | default("") == ""
         - domain | default("") == ""
 
+  tasks:
+
 ############################################################
 # Container lifecycle
 ############################################################
-
-  tasks:
 
     - name: Check container existence
       command: lxc info {{ lxd_remote }}:{{ container_name }}
@@ -46,11 +46,29 @@
       failed_when: false
       changed_when: "'started' in start_result.stdout"
 
-    - name: Ensure root disk size
+############################################################
+# Disk sizing (FIXED)
+############################################################
+
+    - name: Ensure root disk size (attempt set)
       command: >
         lxc config device set
         {{ lxd_remote }}:{{ container_name }}
         root size={{ container_disk }}
+      register: disk_set
+      failed_when: false
+      changed_when: disk_set.rc == 0
+
+    - name: Override root disk if needed
+      command: >
+        lxc config device override
+        {{ lxd_remote }}:{{ container_name }}
+        root size={{ container_disk }}
+      when: disk_set.rc != 0
+
+############################################################
+# Wait for container
+############################################################
 
     - name: Wait for cloud-init
       command: >
@@ -74,6 +92,11 @@
 ############################################################
 
     - name: Install required packages
+      command: >
+        lxc exec {{ lxd_remote }}:{{ container_name }} --
+        apt-get update
+
+    - name: Install LEMP stack
       command: >
         lxc exec {{ lxd_remote }}:{{ container_name }} --
         apt-get install -y
@@ -116,7 +139,7 @@
 ############################################################
 
     - name: Generate DB credentials
-      ansible.builtin.set_fact:
+      set_fact:
         wp_db_name: "wp_{{ lookup('password', '/dev/null length=12 chars=ascii_lowercase') }}"
         wp_db_user: "wp_{{ lookup('password', '/dev/null length=12 chars=ascii_lowercase') }}"
         wp_db_password: "{{ lookup('password', '/dev/null length=28 chars=ascii_letters,digits') }}"
@@ -137,23 +160,6 @@
         GRANT ALL PRIVILEGES ON {{ wp_db_name }}.* TO
         '{{ wp_db_user }}'@'localhost';
         FLUSH PRIVILEGES;"
-      when: wp_installed.rc != 0
-
-############################################################
-# WordPress configuration
-############################################################
-
-    - name: Render wp-config
-      template:
-        src: templates/wp-config.php.j2
-        dest: "/tmp/wp-config.php"
-      when: wp_installed.rc != 0
-
-    - name: Upload wp-config
-      command: >
-        lxc file push --uid 33 --gid 33
-        /tmp/wp-config.php
-        {{ lxd_remote }}:{{ container_name }}{{ wp_root }}/wp-config.php
       when: wp_installed.rc != 0
 
 ############################################################
