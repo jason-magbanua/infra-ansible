@@ -91,6 +91,12 @@
 # Install packages
 ############################################################
 
+    - name: Update apt cache
+      command: >
+        lxc exec {{ lxd_remote }}:{{ container_name }} --
+        apt-get update -qq
+      changed_when: false
+
     - name: Install LEMP stack
       command: >
         lxc exec {{ lxd_remote }}:{{ container_name }} --
