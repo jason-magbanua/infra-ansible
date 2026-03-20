@@ -97,7 +97,36 @@ ansible-playbook playbooks/install-wordpress-on-container.yml \
   -e domain=mysite.example.com
 ```
 
-> **Note:** DB credentials are generated at runtime and not persisted. Save them from the play output or pre-generate them with `ansible-vault encrypt_string`.
+This is idempotent — re-running against an existing container skips install steps and only updates `wp-config.php` and resource limits.
+
+#### Default container resources
+
+| Resource | Default |
+|----------|---------|
+| CPU      | 1 core  |
+| Memory   | 512 MB  |
+| Disk     | 5 GB    |
+
+Override at runtime without editing the file:
+
+```bash
+ansible-playbook playbooks/install-wordpress-on-container.yml \
+  -e container_name=mysite \
+  -e domain=mysite.example.com \
+  -e container_cpu=2 \
+  -e container_memory=1GB \
+  -e container_disk=10GB
+```
+
+#### DB credentials
+
+On a fresh install, credentials are auto-generated and saved to `/opt/infra/secrets/<container_name>-db.yml` (mode `0600`). On re-runs, credentials are loaded from that file and used to re-render `wp-config.php`.
+
+A deployment summary is printed at the end of every run.
+
+#### HTTPS behind a reverse proxy
+
+`wp-config.php` sets `WP_HOME`/`WP_SITEURL` to `https://{{ domain }}` and trusts the `X-Forwarded-Proto` header from the upstream proxy (e.g. Nginx Proxy Manager). This prevents mixed-content errors when SSL is terminated upstream.
 
 ### ZFS + LXD host setup
 
