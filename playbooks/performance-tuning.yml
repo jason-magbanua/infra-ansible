@@ -8,6 +8,7 @@
     lxd_remote: wp-host1
     php_version: "8.3"
     wordpress_domain: "{{ domain }}"
+    wp_root: /var/www/html
 
   pre_tasks:
 

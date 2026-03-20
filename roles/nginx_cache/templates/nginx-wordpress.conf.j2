@@ -1,6 +1,9 @@
 server {
-    server_name {{ wordpress_domain }};
-    root /var/www/{{ wordpress_domain }};
+    listen 80;
+    server_name {{ wordpress_domain }} www.{{ wordpress_domain }};
+
+    root {{ wp_root }};
+    index index.php index.html;
 
     set $skip_cache 0;
 
@@ -14,7 +17,12 @@ server {
         set $skip_cache 1;
     }
 
+    location / {
+        try_files $uri $uri/ /index.php?$args;
+    }
+
     location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/run/php/php{{ php_version }}-fpm.sock;
 
         fastcgi_cache WORDPRESS;
@@ -23,7 +31,10 @@ server {
         fastcgi_no_cache $skip_cache;
 
         add_header X-FastCGI-Cache $upstream_cache_status;
+    }
 
-        include fastcgi_params;
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|woff|woff2|svg)$ {
+        expires max;
+        log_not_found off;
     }
 }
