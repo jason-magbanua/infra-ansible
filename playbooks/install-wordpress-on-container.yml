@@ -147,8 +147,18 @@
         wp_db_user: "wp_{{ lookup('password', '/dev/null length=12 chars=ascii_lowercase') }}"
         wp_db_password: "{{ lookup('password', '/dev/null length=28 chars=ascii_letters,digits') }}"
       when: wp_installed.rc != 0
-      # WARNING: credentials are ephemeral — save them immediately after this play
-      # or use: ansible-vault encrypt_string to store them before running
+
+    - name: Save DB credentials to secrets file
+      copy:
+        dest: "/opt/infra/secrets/{{ container_name }}-db.yml"
+        mode: "0600"
+        content: |
+          # WordPress DB credentials for {{ container_name }} ({{ domain }})
+          # Generated: {{ now(utc=true, fmt='%Y-%m-%dT%H:%M:%SZ') }}
+          wp_db_name: {{ wp_db_name }}
+          wp_db_user: {{ wp_db_user }}
+          wp_db_password: {{ wp_db_password }}
+      when: wp_installed.rc != 0
 
     - name: Create database
       command: >
@@ -165,6 +175,23 @@
         GRANT ALL PRIVILEGES ON {{ wp_db_name }}.* TO
         '{{ wp_db_user }}'@'localhost';
         FLUSH PRIVILEGES;"
+      when: wp_installed.rc != 0
+
+############################################################
+# WordPress configuration
+############################################################
+
+    - name: Render wp-config.php
+      template:
+        src: templates/wp-config.php.j2
+        dest: /tmp/wp-config.php
+      when: wp_installed.rc != 0
+
+    - name: Push wp-config.php to container
+      command: >
+        lxc file push --uid 33 --gid 33
+        /tmp/wp-config.php
+        {{ lxd_remote }}:{{ container_name }}{{ wp_root }}/wp-config.php
       when: wp_installed.rc != 0
 
 ############################################################
@@ -202,3 +229,17 @@
       command: >
         lxc exec {{ lxd_remote }}:{{ container_name }} --
         systemctl reload nginx
+
+############################################################
+# Summary
+############################################################
+
+    - name: Deployment summary
+      debug:
+        msg:
+          - "Container : {{ container_name }}"
+          - "Domain    : {{ domain }}"
+          - "DB name   : {{ wp_db_name | default('(pre-existing)') }}"
+          - "DB user   : {{ wp_db_user | default('(pre-existing)') }}"
+          - "DB pass   : {{ wp_db_password | default('(pre-existing)') }}"
+          - "Creds file: /opt/infra/secrets/{{ container_name }}-db.yml"
