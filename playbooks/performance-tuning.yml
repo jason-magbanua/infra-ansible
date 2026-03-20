@@ -1,6 +1,6 @@
 ---
 - name: Static Nginx + PHP-FPM tuning (vCPU + RAM based)
-  hosts: ubuntu_zfs_wp_hosts
+  hosts: proxmox_vms
   become: true
   gather_facts: true
 

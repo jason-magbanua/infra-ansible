@@ -141,22 +141,28 @@
       command: lxc storage list
       register: storage_output
       changed_when: false
+      when: debug_output | default(false)
 
     - debug:
         var: storage_output.stdout
+      when: debug_output | default(false)
 
     - name: Show networks
       command: lxc network list
       register: network_output
       changed_when: false
+      when: debug_output | default(false)
 
     - debug:
         var: network_output.stdout
+      when: debug_output | default(false)
 
     - name: Show images
       command: lxc image list
       register: image_output
       changed_when: false
+      when: debug_output | default(false)
 
     - debug:
         var: image_output.stdout
+      when: debug_output | default(false)

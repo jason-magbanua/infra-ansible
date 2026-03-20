@@ -6,6 +6,7 @@
   vars:
     zfs_pool_name: user-data
     zfs_mountpoint: /user-data
+    zfs_arc_max_bytes: 1073741824  # 1 GB — tune per host RAM
     zfs_disks:
       - /dev/sdb
       - /dev/sdc
@@ -16,13 +17,13 @@
       apt:
         name: zfsutils-linux
         state: present
-        update_cache: yes
+        update_cache: true
 
     - name: Limit ZFS ARC cache for low memory VM
       copy:
         dest: /etc/modprobe.d/zfs.conf
         content: |
-          options zfs zfs_arc_max=1073741824
+          options zfs zfs_arc_max={{ zfs_arc_max_bytes }}
       notify: update initramfs
 
     - name: Ensure mount directory exists

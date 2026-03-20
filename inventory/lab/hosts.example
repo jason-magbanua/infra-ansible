@@ -13,6 +13,8 @@ wp-host2 ansible_host=10.10.200.13
 
 
 [proxmox_containers]
-jump-host ansible_host=10.10.200.30 ansible_user=root
-nginx ansible_host=10.10.200.29 ansible_user=root
+jump-host ansible_host=10.10.200.30
+nginx     ansible_host=10.10.200.29
 
+[proxmox_containers:vars]
+ansible_user=root

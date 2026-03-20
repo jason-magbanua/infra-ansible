@@ -1,0 +1,14 @@
+---
+# TODO: Install Nginx, MariaDB, and PHP on WordPress VM hosts
+# This playbook is a stub — implement before running site.yml
+- name: Install LEMP stack
+  hosts: proxmox_vms
+  become: true
+
+  vars:
+    php_version: "8.3"
+
+  tasks:
+    - name: Not yet implemented
+      fail:
+        msg: "lemp.yml is not yet implemented"

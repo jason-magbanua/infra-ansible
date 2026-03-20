@@ -16,11 +16,11 @@
   pre_tasks:
 
     - name: Ensure required variables are provided
-      fail:
-        msg: "container_name and domain must be provided"
-      when:
-        - container_name | default("") == ""
-        - domain | default("") == ""
+      assert:
+        that:
+          - container_name | default("") != ""
+          - domain | default("") != ""
+        fail_msg: "container_name and domain must be provided via -e"
 
   tasks:
 
@@ -44,7 +44,7 @@
       command: lxc start {{ lxd_remote }}:{{ container_name }}
       register: start_result
       failed_when: false
-      changed_when: "'started' in start_result.stdout"
+      changed_when: start_result.rc == 0
 
 ############################################################
 # Disk sizing (FIXED)
@@ -91,15 +91,11 @@
 # Install packages
 ############################################################
 
-    - name: Install required packages
-      command: >
-        lxc exec {{ lxd_remote }}:{{ container_name }} --
-        apt-get update
-
     - name: Install LEMP stack
       command: >
         lxc exec {{ lxd_remote }}:{{ container_name }} --
-        apt-get install -y
+        env DEBIAN_FRONTEND=noninteractive
+        apt-get install -y -qq
         nginx
         mariadb-server
         php{{ php_version }}
@@ -112,6 +108,7 @@
         php{{ php_version }}-zip
         unzip
         curl
+      changed_when: true
 
 ############################################################
 # WordPress install
@@ -144,6 +141,8 @@
         wp_db_user: "wp_{{ lookup('password', '/dev/null length=12 chars=ascii_lowercase') }}"
         wp_db_password: "{{ lookup('password', '/dev/null length=28 chars=ascii_letters,digits') }}"
       when: wp_installed.rc != 0
+      # WARNING: credentials are ephemeral — save them immediately after this play
+      # or use: ansible-vault encrypt_string to store them before running
 
     - name: Create database
       command: >

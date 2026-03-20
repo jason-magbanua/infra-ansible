@@ -10,4 +10,11 @@
   template:
     src: nginx-wordpress.conf.j2
     dest: /etc/nginx/sites-available/{{ wordpress_domain }}
-  notify: Restart Nginx
+  notify: Reload Nginx
+
+- name: Enable WordPress vhost
+  file:
+    src: /etc/nginx/sites-available/{{ wordpress_domain }}
+    dest: /etc/nginx/sites-enabled/{{ wordpress_domain }}
+    state: link
+  notify: Reload Nginx
