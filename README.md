@@ -110,6 +110,37 @@ ansible-playbook playbooks/setup-lxc.yml
 
 Pass `--extra-vars debug_output=true` to `setup-lxc.yml` to print storage/network/image state at the end.
 
+#### Connecting the infra server to an LXD remote
+
+Before Ansible can manage LXD containers on a VM host, the infra server's `lxc` client must be trusted by that host's LXD daemon.
+
+LXD does not listen on the network by default. Enable it first **on the VM host**:
+
+```bash
+lxc config set core.https_address :8443
+```
+
+Then generate a one-time trust token **on the VM host**:
+
+```bash
+lxc config trust add --name infra-server
+```
+
+Finally, add the remote **on the infra server** using the printed token:
+
+```bash
+lxc remote add wp-host1 https://<vm-host-ip>:8443 --token <token>
+```
+
+Verify the connection:
+
+```bash
+lxc remote list
+lxc ls wp-host1:
+```
+
+The token is single-use and short-lived — run all three steps in the same session.
+
 ---
 
 ## Roles
