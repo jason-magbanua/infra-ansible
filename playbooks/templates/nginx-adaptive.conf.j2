@@ -61,9 +61,9 @@ http {
     ##
     fastcgi_cache_path /var/cache/nginx
         levels=1:2
-        keys_zone=WORDPRESS:{{ (ansible_memtotal_mb / 20) | int }}m
+        keys_zone=WORDPRESS:{{ (ram_mb | int / 20) | int }}m
         inactive=30m
-        max_size={{ (ansible_memtotal_mb / 2) | int }}m;
+        max_size={{ (ram_mb | int / 2) | int }}m;
 
     fastcgi_cache_key "$scheme$request_method$host$request_uri";
 
