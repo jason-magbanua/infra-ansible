@@ -148,6 +148,11 @@
         wp_db_password: "{{ lookup('password', '/dev/null length=28 chars=ascii_letters,digits') }}"
       when: wp_installed.rc != 0
 
+    - name: Load existing DB credentials from secrets file
+      include_vars:
+        file: "/opt/infra/secrets/{{ container_name }}-db.yml"
+      when: wp_installed.rc == 0
+
     - name: Save DB credentials to secrets file
       copy:
         dest: "/opt/infra/secrets/{{ container_name }}-db.yml"
@@ -185,14 +190,12 @@
       template:
         src: templates/wp-config.php.j2
         dest: /tmp/wp-config.php
-      when: wp_installed.rc != 0
 
     - name: Push wp-config.php to container
       command: >
         lxc file push --uid 33 --gid 33
         /tmp/wp-config.php
         {{ lxd_remote }}:{{ container_name }}{{ wp_root }}/wp-config.php
-      when: wp_installed.rc != 0
 
 ############################################################
 # Nginx configuration

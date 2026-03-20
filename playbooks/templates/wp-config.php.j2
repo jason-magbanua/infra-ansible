@@ -4,6 +4,15 @@ define('DB_USER', '{{ wp_db_user }}');
 define('DB_PASSWORD', '{{ wp_db_password }}');
 define('DB_HOST', 'localhost');
 
+define('WP_HOME', 'https://{{ domain }}');
+define('WP_SITEURL', 'https://{{ domain }}');
+
+// Trust HTTPS from reverse proxy (Nginx Proxy Manager)
+if ( isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ) {
+    $_SERVER['HTTPS'] = 'on';
+}
+
+define('FORCE_SSL_ADMIN', true);
 define('FS_METHOD', 'direct');
 define('WP_DEBUG', false);
 
