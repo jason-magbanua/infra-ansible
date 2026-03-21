@@ -135,7 +135,7 @@ Controls traffic routed between interfaces.
 | 10   | accept | Home LAN (172.16.0.0/12) SSH → DMZ port 22|
 | 11   | accept | Home LAN ping → DMZ                       |
 | 20   | drop   | DMZ SSH → SERVERS blocked                 |
-| 28   | accept | NPM (10.10.100.2) → pve1 (10.10.200.8)    |
+| 28   | accept | NPM (10.10.100.2) → pve1 (172.16.1.8)     |
 | 29   | accept | NPM (10.10.100.2) → streaming-aio          |
 | 30   | drop   | DMZ → Home LAN blocked                    |
 | 40   | drop   | DMZ → 192.168.0.0/16 blocked              |

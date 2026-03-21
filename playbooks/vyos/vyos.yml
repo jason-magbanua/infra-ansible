@@ -145,7 +145,7 @@
           # Rule 28 - Allow NPM access to pve1
           - "set firewall ipv4 forward filter rule 28 action accept"
           - "set firewall ipv4 forward filter rule 28 description 'Allow NPM access to pve1'"
-          - "set firewall ipv4 forward filter rule 28 destination address 10.10.200.8/32"
+          - "set firewall ipv4 forward filter rule 28 destination address 172.16.1.8/32"
           - "set firewall ipv4 forward filter rule 28 source address 10.10.100.2/32"
           # Rule 29 - Allow NPM access to streaming-aio
           - "set firewall ipv4 forward filter rule 29 action accept"
