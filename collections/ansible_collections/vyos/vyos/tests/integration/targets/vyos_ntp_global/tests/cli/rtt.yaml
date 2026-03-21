@@ -1,0 +1,49 @@
+---
+- debug:
+    msg: START vyos_ntp_global rtt integration tests on connection={{ ansible_connection }}
+
+- include_tasks: _remove_config.yaml
+
+- block:
+    - name: RTT Merge the provided configuration with the existing running configuration
+      register: baseconfig
+      vyos.vyos.vyos_ntp_global:
+        config: "{{ rtt.config }}"
+        state: merged
+
+    - vyos.vyos.vyos_facts:
+        gather_network_resources: ntp_global
+
+    - assert:
+        that:
+          - (baseconfig.commands|length) == (rtt.commands|length)
+          - baseconfig.changed == true
+          - baseconfig.commands|symmetric_difference(rtt.commands) == []
+          - baseconfig.after == ansible_facts['network_resources']['ntp_global']
+
+    - name: RTT Merge the existing configuration with the provided running configuration
+      register: result
+      vyos.vyos.vyos_ntp_global:
+        config:
+          servers:
+            - server: server1
+              options:
+                - pool
+                - prefer
+
+            - server: server2
+              options:
+                - noselect
+
+    - name: RTT Revert back to base config using facts round trip
+      register: revert
+      vyos.vyos.vyos_ntp_global:
+        config: "{{ ansible_facts['network_resources']['ntp_global'] }}"
+        state: overridden
+
+    - name: RTT Assert that config was reverted
+      assert:
+        that: baseconfig.after == revert.after
+
+  always:
+    - include_tasks: _remove_config.yaml

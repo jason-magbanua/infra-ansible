@@ -1,0 +1,13 @@
+---
+- ansible.builtin.include_tasks: _remove_config.yaml
+
+- name: Setup
+  ansible.netcommon.cli_config:
+    config: |-
+      set service lldp interface eth1
+      set service lldp interface eth1 location elin '0000000911'
+      set service lldp interface eth2
+      set service lldp interface eth2 location coordinate-based latitude 33.524449N
+      set service lldp interface eth2 location coordinate-based altitude 2200
+      set service lldp interface eth2 location coordinate-based datum WGS84
+      set service lldp interface eth2 location coordinate-based longitude 222.267255W

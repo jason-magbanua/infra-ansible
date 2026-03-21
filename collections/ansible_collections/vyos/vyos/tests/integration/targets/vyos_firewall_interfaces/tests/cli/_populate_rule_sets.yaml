@@ -1,0 +1,9 @@
+---
+- name: ensure facts
+  include_tasks: _get_version.yaml
+
+- name: Setup Rule Sets {{ vyos_version }}
+  vyos.vyos.vyos_config:
+    lines: "{{ populate_rs }}"
+  vars:
+    ansible_connection: ansible.netcommon.network_cli

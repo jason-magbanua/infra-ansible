@@ -1,0 +1,8 @@
+---
+# Encrypt this file with: ansible-vault encrypt vars/vault.yml
+#
+# vyos_user_encrypted_password: "$6$rounds=656000$feYhHDeyqkk2I5QL$..."
+# vyos_wg0_private_key: "MC4fIhpERpwwKrYCF2TiLztbb9SyujyuYOP2oNT1r3E="
+
+vyos_user_encrypted_password: "$6$rounds=656000$feYhHDeyqkk2I5QL$dxKgSiqwPSRdy8WK9wQvxnFWW8VbqeVHGCJRMgn8Xx29BHzxq4FHULgH3//Kso.UwV9rYFdwus4WvK3fyIPxs1"
+vyos_wg0_private_key: "MC4fIhpERpwwKrYCF2TiLztbb9SyujyuYOP2oNT1r3E="

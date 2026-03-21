@@ -1,0 +1,10 @@
+---
+- name: ensure facts
+  include_tasks: _get_version.yaml
+
+- name: Remove pre-existing firewall rules
+  vyos.vyos.vyos_config:
+    lines: "{{ remove_firewall_config }}"
+  ignore_errors: true
+  vars:
+    ansible_connection: ansible.netcommon.network_cli

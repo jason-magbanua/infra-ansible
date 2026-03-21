@@ -1,0 +1,101 @@
+---
+# ==========================================
+# SYSTEM
+# ==========================================
+vyos_hostname: vyos
+vyos_timezone: Asia/Manila
+vyos_commit_revisions: "100"
+vyos_console_device: ttyS0
+vyos_console_speed: "115200"
+vyos_reboot_on_upgrade_failure: "5"
+
+# ==========================================
+# LOGIN
+# ==========================================
+vyos_user: vyos
+vyos_ssh_key_name: root-sshkey
+vyos_ssh_key_type: ssh-rsa
+vyos_ssh_public_key: >-
+  AAAAB3NzaC1yc2EAAAABIwAAAQEAqr1iP6u+cgkfMpeqqUUy4TG/GwVEcHVFpROikPve6m36DUwuGMOA3ktQ7OVJfupa/wLcNHc+UqRoedl0Pa4YNzy2IhEF4aGxHP1ohSZ+22PSZrnWaEqC36mEfs0HP1Zx3vpep4y+wlmkUVdr9HO8QpYvs3K9pu2bt+gLUVe+s+tdJUykFhqViI4JZp1zTbwdLinfea3fbL4frGBhACb0EIMQC8VzEnom1FAeL8fVYVzrkfL5s0DN5AISk8VDQ+sXxdUInyjflrHLs+/5qDls6eVLDJZxnCXcKU590kb4/24a4jKkQeqS5cye+HiaWvt1phHg9ikmvhZoBr9zp4F9WQ==
+
+# ==========================================
+# INTERFACES
+# ==========================================
+vyos_eth0_description: "transit0 - Home ISP uplink (underlay for wg0 + failover path)"
+vyos_eth1_description: "vlan-trunk - 802.1Q trunk to Proxmox host"
+
+vyos_vlan100_address: 10.10.100.1/29
+vyos_vlan100_description: "vlan100-dmz - DMZ network (public services via wg0)"
+
+vyos_vlan200_address: 10.10.200.1/27
+vyos_vlan200_description: "vlan200-servers - Internal server network (internet via wg0)"
+
+vyos_lo_description: "Loopback interface (reserved for router services)"
+
+# ==========================================
+# WIREGUARD
+# ==========================================
+vyos_wg0_address: 10.255.255.2/29
+vyos_wg0_port: "51820"
+vyos_wg0_description: "wg0 - WireGuard overlay to VPS (primary egress for PBR traffic)"
+vyos_wg0_peer_name: VPS
+vyos_wg0_peer_address: "51.79.161.145"
+vyos_wg0_peer_port: "51830"
+vyos_wg0_peer_public_key: "ah9YDcwd6rq0vI3cUFbJDzHeh7MworfzIqFfOozw4Dk="
+vyos_wg0_peer_keepalive: "25"
+vyos_wg0_peer_description: "VPS endpoint - public IP 51.79.161.145 (port 51830)"
+
+# ==========================================
+# DHCP
+# ==========================================
+vyos_dhcp_network_name: SERVERS
+vyos_dhcp_subnet: 10.10.200.0/27
+vyos_dhcp_lease: "86400"
+vyos_dhcp_default_router: 10.10.200.1
+vyos_dhcp_domain_name: magbanua.xyz
+vyos_dhcp_domain_search: magbanua.xyz
+vyos_dhcp_name_servers:
+  - 8.8.8.8
+  - 1.1.1.1
+vyos_dhcp_range_start: 10.10.200.11
+vyos_dhcp_range_stop: 10.10.200.30
+vyos_dhcp_subnet_id: "1"
+
+# ==========================================
+# NTP
+# ==========================================
+vyos_ntp_servers:
+  - time1.vyos.net
+  - time2.vyos.net
+  - time3.vyos.net
+vyos_ntp_allow_clients:
+  - 127.0.0.0/8
+  - 169.254.0.0/16
+  - 10.0.0.0/8
+  - 172.16.0.0/12
+  - 192.168.0.0/16
+  - "::1/128"
+  - fe80::/10
+  - fc00::/7
+
+# ==========================================
+# SSH
+# ==========================================
+vyos_ssh_listen_addresses:
+  - 172.16.1.182
+  - 10.10.200.1
+  - 192.168.8.182
+
+# ==========================================
+# STATIC ROUTES
+# ==========================================
+vyos_static_routes:
+  - prefix: 10.200.10.0/24
+    next_hop: 10.10.200.25
+    description: ""
+  - prefix: 172.16.100.0/24
+    next_hop: 10.255.255.2
+    description: "Remote subnet behind VPS (reachable via wg0 tunnel)"
+  - prefix: 172.16.196.0/24
+    next_hop: 10.255.255.2
+    description: "Remote OVH OPNsense network (via wg0 tunnel)"

@@ -1,0 +1,285 @@
+---
+# VyOS router configuration playbook
+#
+# Prerequisites:
+#   ansible-galaxy collection install -r collections/requirements.yml -p collections/
+#
+# Run all:
+#   ansible-playbook playbooks/vyos/vyos.yml --ask-vault-pass
+#
+# Run specific sections via tags:
+#   --tags system        hostname, timezone, syslog, console
+#   --tags auth          login user, password, SSH public key
+#   --tags interfaces    ethernet, VLAN, loopback, WireGuard
+#   --tags firewall      IPv4 forward filter + prerouting raw rules
+#   --tags dhcp          DHCP server
+#   --tags ntp           NTP service
+#   --tags ssh           SSH listen addresses
+#   --tags routes        static routes
+
+- name: Configure VyOS router
+  hosts: vyos
+  gather_facts: false
+  vars_files:
+    - vars/main.yml
+    - vars/vault.yml
+
+  tasks:
+
+    # ==========================================
+    # SYSTEM
+    # ==========================================
+
+    - name: Configure system settings
+      vyos.vyos.vyos_config:
+        lines:
+          - "set system host-name {{ vyos_hostname }}"
+          - "set system time-zone {{ vyos_timezone }}"
+          - "set system config-management commit-revisions {{ vyos_commit_revisions }}"
+          - "set system console device {{ vyos_console_device }} speed {{ vyos_console_speed }}"
+          - "set system option reboot-on-upgrade-failure {{ vyos_reboot_on_upgrade_failure }}"
+          - "set system syslog local facility all level info"
+          - "set system syslog local facility local7 level debug"
+        save: true
+      tags: system
+
+    # ==========================================
+    # AUTH
+    # ==========================================
+
+    - name: Configure login and SSH key
+      vyos.vyos.vyos_config:
+        lines:
+          - "set system login user {{ vyos_user }} authentication encrypted-password '{{ vyos_user_encrypted_password }}'"
+          - "set system login user {{ vyos_user }} authentication public-keys {{ vyos_ssh_key_name }} key {{ vyos_ssh_public_key }}"
+          - "set system login user {{ vyos_user }} authentication public-keys {{ vyos_ssh_key_name }} type {{ vyos_ssh_key_type }}"
+        save: true
+      tags: auth
+
+    # ==========================================
+    # INTERFACES
+    # ==========================================
+
+    - name: Configure eth0 (WAN uplink)
+      vyos.vyos.vyos_config:
+        lines:
+          - "set interfaces ethernet eth0 address dhcp"
+          - "set interfaces ethernet eth0 description '{{ vyos_eth0_description }}'"
+          - "set interfaces ethernet eth0 offload gro"
+          - "set interfaces ethernet eth0 offload gso"
+          - "set interfaces ethernet eth0 offload sg"
+          - "set interfaces ethernet eth0 offload tso"
+        save: true
+      tags: interfaces
+
+    - name: Configure eth1 (VLAN trunk) and subinterfaces
+      vyos.vyos.vyos_config:
+        lines:
+          - "set interfaces ethernet eth1 description '{{ vyos_eth1_description }}'"
+          - "set interfaces ethernet eth1 offload gro"
+          - "set interfaces ethernet eth1 offload gso"
+          - "set interfaces ethernet eth1 offload sg"
+          - "set interfaces ethernet eth1 offload tso"
+          - "set interfaces ethernet eth1 vif 100 address {{ vyos_vlan100_address }}"
+          - "set interfaces ethernet eth1 vif 100 description '{{ vyos_vlan100_description }}'"
+          - "set interfaces ethernet eth1 vif 200 address {{ vyos_vlan200_address }}"
+          - "set interfaces ethernet eth1 vif 200 description '{{ vyos_vlan200_description }}'"
+        save: true
+      tags: interfaces
+
+    - name: Configure loopback
+      vyos.vyos.vyos_config:
+        lines:
+          - "set interfaces loopback lo description '{{ vyos_lo_description }}'"
+        save: true
+      tags: interfaces
+
+    - name: Configure WireGuard wg0
+      vyos.vyos.vyos_config:
+        lines:
+          - "set interfaces wireguard wg0 address {{ vyos_wg0_address }}"
+          - "set interfaces wireguard wg0 description '{{ vyos_wg0_description }}'"
+          - "set interfaces wireguard wg0 port {{ vyos_wg0_port }}"
+          - "set interfaces wireguard wg0 private-key '{{ vyos_wg0_private_key }}'"
+          - "set interfaces wireguard wg0 peer {{ vyos_wg0_peer_name }} address {{ vyos_wg0_peer_address }}"
+          - "set interfaces wireguard wg0 peer {{ vyos_wg0_peer_name }} allowed-ips 0.0.0.0/0"
+          - "set interfaces wireguard wg0 peer {{ vyos_wg0_peer_name }} description '{{ vyos_wg0_peer_description }}'"
+          - "set interfaces wireguard wg0 peer {{ vyos_wg0_peer_name }} persistent-keepalive {{ vyos_wg0_peer_keepalive }}"
+          - "set interfaces wireguard wg0 peer {{ vyos_wg0_peer_name }} port {{ vyos_wg0_peer_port }}"
+          - "set interfaces wireguard wg0 peer {{ vyos_wg0_peer_name }} public-key '{{ vyos_wg0_peer_public_key }}'"
+        save: true
+      tags: interfaces
+
+    # ==========================================
+    # FIREWALL - IPv4 FORWARD FILTER
+    # ==========================================
+
+    - name: Configure IPv4 forward filter rules
+      vyos.vyos.vyos_config:
+        lines:
+          # Rule 1 - Allow established/related
+          - "set firewall ipv4 forward filter rule 1 action accept"
+          - "set firewall ipv4 forward filter rule 1 description 'Allow established/related'"
+          - "set firewall ipv4 forward filter rule 1 state established"
+          - "set firewall ipv4 forward filter rule 1 state related"
+          # Rule 10 - Allow Home LAN SSH to DMZ
+          - "set firewall ipv4 forward filter rule 10 action accept"
+          - "set firewall ipv4 forward filter rule 10 description 'Allow Home LAN SSH to DMZ'"
+          - "set firewall ipv4 forward filter rule 10 destination address 10.10.100.0/29"
+          - "set firewall ipv4 forward filter rule 10 destination port 22"
+          - "set firewall ipv4 forward filter rule 10 protocol tcp"
+          - "set firewall ipv4 forward filter rule 10 source address 172.16.0.0/12"
+          # Rule 11 - Allow Home LAN ping to DMZ
+          - "set firewall ipv4 forward filter rule 11 action accept"
+          - "set firewall ipv4 forward filter rule 11 description 'Allow Home LAN ping to DMZ'"
+          - "set firewall ipv4 forward filter rule 11 destination address 10.10.100.0/29"
+          - "set firewall ipv4 forward filter rule 11 protocol icmp"
+          - "set firewall ipv4 forward filter rule 11 source address 172.16.0.0/12"
+          # Rule 20 - Block DMZ SSH to SERVERS
+          - "set firewall ipv4 forward filter rule 20 action drop"
+          - "set firewall ipv4 forward filter rule 20 description 'Block DMZ SSH to SERVERS'"
+          - "set firewall ipv4 forward filter rule 20 destination address 10.10.200.0/27"
+          - "set firewall ipv4 forward filter rule 20 destination port 22"
+          - "set firewall ipv4 forward filter rule 20 protocol tcp"
+          - "set firewall ipv4 forward filter rule 20 source address 10.10.100.0/29"
+          # Rule 28 - Allow NPM access to pve1
+          - "set firewall ipv4 forward filter rule 28 action accept"
+          - "set firewall ipv4 forward filter rule 28 description 'Allow NPM access to pve1'"
+          - "set firewall ipv4 forward filter rule 28 destination address 10.10.200.8/32"
+          - "set firewall ipv4 forward filter rule 28 source address 10.10.100.2/32"
+          # Rule 29 - Allow NPM access to streaming-aio
+          - "set firewall ipv4 forward filter rule 29 action accept"
+          - "set firewall ipv4 forward filter rule 29 description 'Allow NPM access to streaming-aio'"
+          - "set firewall ipv4 forward filter rule 29 destination address 172.16.1.50/32"
+          - "set firewall ipv4 forward filter rule 29 source address 10.10.100.2/32"
+          # Rule 30 - Block DMZ access to Home LAN
+          - "set firewall ipv4 forward filter rule 30 action drop"
+          - "set firewall ipv4 forward filter rule 30 description 'Block DMZ access to Home LAN'"
+          - "set firewall ipv4 forward filter rule 30 destination address 172.16.0.0/12"
+          - "set firewall ipv4 forward filter rule 30 source address 10.10.100.0/29"
+          # Rule 40 - Block DMZ access to private 192.168.x.x
+          - "set firewall ipv4 forward filter rule 40 action drop"
+          - "set firewall ipv4 forward filter rule 40 description 'Block DMZ access to private 192.168.x.x networks'"
+          - "set firewall ipv4 forward filter rule 40 destination address 192.168.0.0/16"
+          - "set firewall ipv4 forward filter rule 40 source address 10.10.100.0/29"
+        save: true
+      tags: firewall
+
+    # ==========================================
+    # FIREWALL - IPv4 PREROUTING RAW (PBR exclusions)
+    # ==========================================
+
+    - name: Configure IPv4 prerouting raw rules
+      vyos.vyos.vyos_config:
+        lines:
+          # Rule 1 - DMZ -> SERVERS inter-VLAN
+          - "set firewall ipv4 prerouting raw rule 1 action accept"
+          - "set firewall ipv4 prerouting raw rule 1 description 'Allow DMZ -> SERVERS (local inter-VLAN traffic)'"
+          - "set firewall ipv4 prerouting raw rule 1 destination address 10.10.200.0/27"
+          - "set firewall ipv4 prerouting raw rule 1 source address 10.10.100.0/29"
+          # Rule 2 - SERVERS -> DMZ inter-VLAN
+          - "set firewall ipv4 prerouting raw rule 2 action accept"
+          - "set firewall ipv4 prerouting raw rule 2 description 'Allow SERVERS -> DMZ (local inter-VLAN traffic)'"
+          - "set firewall ipv4 prerouting raw rule 2 destination address 10.10.100.0/29"
+          - "set firewall ipv4 prerouting raw rule 2 source address 10.10.200.0/27"
+          # Rule 3 - SERVERS -> SERVERS same subnet
+          - "set firewall ipv4 prerouting raw rule 3 action accept"
+          - "set firewall ipv4 prerouting raw rule 3 description 'Allow SERVERS -> SERVERS (same subnet traffic)'"
+          - "set firewall ipv4 prerouting raw rule 3 destination address 10.10.200.0/27"
+          - "set firewall ipv4 prerouting raw rule 3 source address 10.10.200.0/27"
+          # Rule 4 - DMZ -> DMZ same subnet
+          - "set firewall ipv4 prerouting raw rule 4 action accept"
+          - "set firewall ipv4 prerouting raw rule 4 description 'Allow DMZ -> DMZ (same subnet traffic)'"
+          - "set firewall ipv4 prerouting raw rule 4 destination address 10.10.100.0/29"
+          - "set firewall ipv4 prerouting raw rule 4 source address 10.10.100.0/29"
+          # Rule 5 - Exclude 172.16.0.0/12 from PBR (SERVERS src)
+          - "set firewall ipv4 prerouting raw rule 5 action accept"
+          - "set firewall ipv4 prerouting raw rule 5 description 'Exclude 172.16.0.0/12 from PBR (local underlay)'"
+          - "set firewall ipv4 prerouting raw rule 5 destination address 172.16.0.0/12"
+          - "set firewall ipv4 prerouting raw rule 5 source address 10.10.200.0/27"
+          # Rule 6 - Exclude 172.16.0.0/12 from PBR (DMZ src)
+          - "set firewall ipv4 prerouting raw rule 6 action accept"
+          - "set firewall ipv4 prerouting raw rule 6 description 'Exclude 172.16.0.0/12 from PBR (local underlay)'"
+          - "set firewall ipv4 prerouting raw rule 6 destination address 172.16.0.0/12"
+          - "set firewall ipv4 prerouting raw rule 6 source address 10.10.100.0/29"
+          # Rule 7 - Exclude 192.168.0.0/16 from PBR (SERVERS src)
+          - "set firewall ipv4 prerouting raw rule 7 action accept"
+          - "set firewall ipv4 prerouting raw rule 7 description 'Exclude 192.168.0.0/16 from PBR (local networks)'"
+          - "set firewall ipv4 prerouting raw rule 7 destination address 192.168.0.0/16"
+          - "set firewall ipv4 prerouting raw rule 7 source address 10.10.200.0/27"
+          # Rule 8 - Exclude 192.168.0.0/16 from PBR (DMZ src)
+          - "set firewall ipv4 prerouting raw rule 8 action accept"
+          - "set firewall ipv4 prerouting raw rule 8 description 'Exclude 192.168.0.0/16 from PBR (local networks)'"
+          - "set firewall ipv4 prerouting raw rule 8 destination address 192.168.0.0/16"
+          - "set firewall ipv4 prerouting raw rule 8 source address 10.10.100.0/29"
+        save: true
+      tags: firewall
+
+    # ==========================================
+    # DHCP SERVER
+    # ==========================================
+
+    - name: Configure DHCP server
+      vyos.vyos.vyos_config:
+        lines:
+          - "set service dhcp-server shared-network-name {{ vyos_dhcp_network_name }} subnet {{ vyos_dhcp_subnet }} lease {{ vyos_dhcp_lease }}"
+          - "set service dhcp-server shared-network-name {{ vyos_dhcp_network_name }} subnet {{ vyos_dhcp_subnet }} option default-router {{ vyos_dhcp_default_router }}"
+          - "set service dhcp-server shared-network-name {{ vyos_dhcp_network_name }} subnet {{ vyos_dhcp_subnet }} option domain-name {{ vyos_dhcp_domain_name }}"
+          - "set service dhcp-server shared-network-name {{ vyos_dhcp_network_name }} subnet {{ vyos_dhcp_subnet }} option domain-search {{ vyos_dhcp_domain_search }}"
+          - "set service dhcp-server shared-network-name {{ vyos_dhcp_network_name }} subnet {{ vyos_dhcp_subnet }} range 0 start {{ vyos_dhcp_range_start }}"
+          - "set service dhcp-server shared-network-name {{ vyos_dhcp_network_name }} subnet {{ vyos_dhcp_subnet }} range 0 stop {{ vyos_dhcp_range_stop }}"
+          - "set service dhcp-server shared-network-name {{ vyos_dhcp_network_name }} subnet {{ vyos_dhcp_subnet }} subnet-id {{ vyos_dhcp_subnet_id }}"
+        save: true
+      tags: dhcp
+
+    - name: Configure DHCP name servers
+      vyos.vyos.vyos_config:
+        lines: >-
+          {{ vyos_dhcp_name_servers | map('regex_replace', '^(.*)$',
+            'set service dhcp-server shared-network-name ' + vyos_dhcp_network_name +
+            ' subnet ' + vyos_dhcp_subnet + ' option name-server \1') | list }}
+        save: true
+      tags: dhcp
+
+    # ==========================================
+    # NTP
+    # ==========================================
+
+    - name: Configure NTP servers and allowed clients
+      vyos.vyos.vyos_config:
+        lines: >-
+          {{
+            (vyos_ntp_servers | map('regex_replace', '^(.*)$', 'set service ntp server \1') | list) +
+            (vyos_ntp_allow_clients | map('regex_replace', '^(.*)$', 'set service ntp allow-client address \1') | list)
+          }}
+        save: true
+      tags: ntp
+
+    # ==========================================
+    # SSH
+    # ==========================================
+
+    - name: Configure SSH listen addresses
+      vyos.vyos.vyos_config:
+        lines: >-
+          {{ vyos_ssh_listen_addresses | map('regex_replace', '^(.*)$', 'set service ssh listen-address \1') | list }}
+        save: true
+      tags: ssh
+
+    # ==========================================
+    # STATIC ROUTES
+    # ==========================================
+
+    - name: Configure static route {{ item.prefix }}
+      vyos.vyos.vyos_config:
+        lines: >-
+          {{
+            ['set protocols static route ' + item.prefix + ' next-hop ' + item.next_hop] +
+            (["set protocols static route " + item.prefix + " description '" + item.description + "'"]
+             if item.description else [])
+          }}
+        save: true
+      loop: "{{ vyos_static_routes }}"
+      loop_control:
+        label: "{{ item.prefix }} via {{ item.next_hop }}"
+      tags: routes

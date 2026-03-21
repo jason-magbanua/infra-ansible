@@ -1,0 +1,43 @@
+---
+- debug:
+    msg: START vyos_firewall_global round trip integration tests on connection={{ ansible_connection }}
+
+- include_tasks: _get_version.yaml
+
+- include_tasks: _remove_config.yaml
+
+- block:
+    - name: Apply the provided configuration (base config)
+      register: base_config
+      vyos.vyos.vyos_firewall_global:
+        config: "{{ round_trip['forward_config'] }}"
+        state: merged
+
+    - name: Gather firewall_global facts
+      vyos.vyos.vyos_facts:
+        gather_subset:
+          - default
+        gather_network_resources:
+          - firewall_global
+
+    - name: Apply the provided configuration (config to be reverted)
+      register: result
+      vyos.vyos.vyos_firewall_global:
+        config: "{{ round_trip['revert_config'] }}"
+        state: merged
+
+    - name: Assert that changes were applied
+      assert:
+        that: "{{ round_trip['after'] == result['after'] }}"
+
+    - name: Revert back to base config using facts round trip
+      register: revert
+      vyos.vyos.vyos_firewall_global:
+        config: "{{ ansible_facts['network_resources']['firewall_global'] }}"
+        state: replaced
+
+    - name: Assert that config was reverted
+      assert:
+        that: "{{ base_config['after'] == revert['after']}}"
+  always:
+    - include_tasks: _remove_config.yaml

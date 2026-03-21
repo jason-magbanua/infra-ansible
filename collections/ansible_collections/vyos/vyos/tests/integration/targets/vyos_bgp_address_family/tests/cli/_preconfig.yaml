@@ -1,0 +1,19 @@
+---
+- name: setup
+  vyos.vyos.vyos_config:
+    lines:
+      - set policy access-list 20 description 'acl20'
+      - set policy access-list 40 description 'acl40'
+      - set policy access-list6 10 description 'acl10'
+      - set policy route-map map01 description 'map01'
+  ignore_errors: true
+  vars:
+    ansible_connection: ansible.netcommon.network_cli
+
+- name: setup for 1.4+
+  vyos.vyos.vyos_config:
+    lines:
+      - set protocols bgp system-as 65536
+      - set protocols bgp neighbor 203.0.113.5 remote-as 65534
+      - set protocols bgp neighbor 192.0.2.25 remote-as 65534
+  when: vyos_version is version('1.4.0', '>=', version_type='semver')

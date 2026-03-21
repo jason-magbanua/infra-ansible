@@ -1,0 +1,17 @@
+---
+- name: Remove pre-existing snmp_server config
+  vyos.vyos.vyos_snmp_server:
+    config:
+    state: deleted
+  ignore_errors: true
+  vars:
+    ansible_connection: ansible.netcommon.network_cli
+
+- name: remove interfaces address
+  vyos.vyos.vyos_config:
+    lines:
+      - delete interface ethernet eth1 address
+      - delete interface ethernet eth2 address
+  ignore_errors: true
+  vars:
+    ansible_connection: ansible.netcommon.network_cli

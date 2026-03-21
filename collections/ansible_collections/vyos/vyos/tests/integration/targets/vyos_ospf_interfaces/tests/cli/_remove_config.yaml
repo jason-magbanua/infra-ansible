@@ -1,0 +1,9 @@
+---
+- name: ensure facts
+  include_tasks: _get_version.yaml
+
+- name: Remove pre-existing OSPF processes
+  vyos.vyos.vyos_config:
+    lines: "{{ remove_commands }}"
+  vars:
+    ansible_connection: ansible.netcommon.network_cli

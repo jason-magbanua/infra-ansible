@@ -1,0 +1,8 @@
+---
+- name: Setup
+  vars:
+  ansible.netcommon.cli_config:
+    config: |-
+      set service lldp interface eth2
+      set service lldp interface eth2 location elin '0000000911'
+      set service lldp interface eth2 disable
