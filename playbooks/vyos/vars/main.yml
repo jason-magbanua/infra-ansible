@@ -39,11 +39,9 @@ vyos_wg0_address: 10.255.255.2/29
 vyos_wg0_port: "51820"
 vyos_wg0_description: "wg0 - WireGuard overlay to VPS (primary egress for PBR traffic)"
 vyos_wg0_peer_name: VPS
-vyos_wg0_peer_address: "51.79.161.145"
 vyos_wg0_peer_port: "51830"
-vyos_wg0_peer_public_key: "ah9YDcwd6rq0vI3cUFbJDzHeh7MworfzIqFfOozw4Dk="
 vyos_wg0_peer_keepalive: "25"
-vyos_wg0_peer_description: "VPS endpoint - public IP 51.79.161.145 (port 51830)"
+vyos_wg0_peer_description: "VPS endpoint - public IP {{ vyos_wg0_peer_address }} (port {{ vyos_wg0_peer_port }})"
 
 # ==========================================
 # DHCP

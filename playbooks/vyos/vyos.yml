@@ -5,7 +5,7 @@
 #   ansible-galaxy collection install -r collections/requirements.yml -p collections/
 #
 # Run all:
-#   ansible-playbook playbooks/vyos/vyos.yml --ask-vault-pass
+#   ansible-playbook playbooks/vyos/vyos.yml
 #
 # Run specific sections via tags:
 #   --tags system        hostname, timezone, syslog, console
@@ -22,7 +22,7 @@
   gather_facts: false
   vars_files:
     - vars/main.yml
-    - vars/vault.yml
+    - /opt/infra/secrets/vyos-vault.yml
 
   tasks:
 

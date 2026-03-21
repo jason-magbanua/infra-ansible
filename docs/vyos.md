@@ -30,8 +30,14 @@ Policy-based routing (PBR) sends all egress from VLAN100/VLAN200 through `wg0`. 
 playbooks/vyos/
 ├── vyos.yml          # Main playbook
 └── vars/
-    ├── main.yml      # All non-sensitive variables
-    └── vault.yml     # Sensitive variables (encrypt before committing)
+    └── main.yml      # All non-sensitive variables
+```
+
+Secrets live outside the repo:
+
+```
+/opt/infra/secrets/
+└── vyos-vault.yml    # Sensitive variables (never committed)
 ```
 
 Connection settings live with the inventory:
@@ -51,11 +57,7 @@ Install the `vyos.vyos` collection:
 ansible-galaxy collection install -r collections/requirements.yml -p collections/
 ```
 
-Encrypt the vault file before committing:
-
-```bash
-ansible-vault encrypt playbooks/vyos/vars/vault.yml
-```
+Ensure the secrets file exists at `/opt/infra/secrets/vyos-vault.yml` with the required variables (see [Variables](#variables) below).
 
 ---
 
@@ -64,14 +66,14 @@ ansible-vault encrypt playbooks/vyos/vars/vault.yml
 **Full configuration run:**
 
 ```bash
-ansible-playbook playbooks/vyos/vyos.yml --ask-vault-pass
+ansible-playbook playbooks/vyos/vyos.yml
 ```
 
 **Run only specific sections using tags:**
 
 ```bash
-ansible-playbook playbooks/vyos/vyos.yml --ask-vault-pass --tags firewall
-ansible-playbook playbooks/vyos/vyos.yml --ask-vault-pass --tags interfaces,routes
+ansible-playbook playbooks/vyos/vyos.yml --tags firewall
+ansible-playbook playbooks/vyos/vyos.yml --tags interfaces,routes
 ```
 
 ---
@@ -97,27 +99,27 @@ ansible-playbook playbooks/vyos/vyos.yml --ask-vault-pass --tags interfaces,rout
 
 Key variables — see the file for the full list.
 
-| Variable                   | Description                                  |
-|----------------------------|----------------------------------------------|
-| `vyos_hostname`            | Router hostname (`vyos`)                     |
-| `vyos_timezone`            | System timezone (`Asia/Manila`)              |
-| `vyos_vlan100_address`     | DMZ gateway IP (`10.10.100.1/29`)            |
-| `vyos_vlan200_address`     | SERVERS gateway IP (`10.10.200.1/27`)        |
-| `vyos_wg0_address`         | WireGuard tunnel address (`10.255.255.2/29`) |
-| `vyos_wg0_peer_address`    | VPS public IP                                |
-| `vyos_wg0_peer_public_key` | VPS WireGuard public key                     |
-| `vyos_dhcp_network_name`   | DHCP shared network name (`SERVERS`)         |
-| `vyos_dhcp_subnet`         | DHCP subnet (`10.10.200.0/27`)               |
-| `vyos_dhcp_range_start/stop`| DHCP range (`.11` – `.30`)                 |
-| `vyos_ssh_listen_addresses`| SSH bind addresses                           |
-| `vyos_static_routes`       | List of `{prefix, next_hop, description}`    |
+| Variable                    | Description                                  |
+|-----------------------------|----------------------------------------------|
+| `vyos_hostname`             | Router hostname (`vyos`)                     |
+| `vyos_timezone`             | System timezone (`Asia/Manila`)              |
+| `vyos_vlan100_address`      | DMZ gateway IP (`10.10.100.1/29`)            |
+| `vyos_vlan200_address`      | SERVERS gateway IP (`10.10.200.1/27`)        |
+| `vyos_wg0_address`          | WireGuard tunnel address (`10.255.255.2/29`) |
+| `vyos_dhcp_network_name`    | DHCP shared network name (`SERVERS`)         |
+| `vyos_dhcp_subnet`          | DHCP subnet (`10.10.200.0/27`)               |
+| `vyos_dhcp_range_start/stop`| DHCP range (`.11` – `.30`)                  |
+| `vyos_ssh_listen_addresses` | SSH bind addresses                           |
+| `vyos_static_routes`        | List of `{prefix, next_hop, description}`    |
 
-### `vars/vault.yml` (sensitive — encrypt with ansible-vault)
+### `/opt/infra/secrets/vyos-vault.yml` (sensitive — never committed)
 
-| Variable                        | Description                          |
-|---------------------------------|--------------------------------------|
-| `vyos_user_encrypted_password`  | SHA-512 crypt hash for the vyos user |
-| `vyos_wg0_private_key`          | WireGuard private key for wg0        |
+| Variable                       | Description                          |
+|--------------------------------|--------------------------------------|
+| `vyos_user_encrypted_password` | SHA-512 crypt hash for the vyos user |
+| `vyos_wg0_private_key`         | WireGuard private key for wg0        |
+| `vyos_wg0_peer_address`        | VPS public IP (endpoint)             |
+| `vyos_wg0_peer_public_key`     | VPS WireGuard public key             |
 
 ---
 
@@ -185,4 +187,4 @@ Then apply with `--tags routes`.
 
 - `hw-id` (MAC address) fields are intentionally absent — VyOS sets these from hardware and rejects `set` commands that attempt to change them.
 - `save: true` on each task commits and persists the config to startup. Re-running the playbook when config is already in sync results in no changes.
-- The WireGuard private key is written to the router in plaintext (as required by VyOS). Ensure `vault.yml` is encrypted and the Ansible control host is trusted.
+- The WireGuard private key is written to the router in plaintext (as required by VyOS). Ensure the Ansible control host is trusted and `/opt/infra/secrets/` has appropriate file permissions.
