@@ -219,7 +219,7 @@
 
     - name: Render nginx config
       template:
-        src: templates/nginx-wordpress.conf.j2
+        src: templates/nginx-vhost-basic.conf.j2
         dest: "/tmp/nginx.conf"
 
     - name: Upload nginx config

@@ -64,14 +64,8 @@
 
     - name: Render OPcache config locally
       copy:
+        src: files/opcache.ini
         dest: /tmp/10-opcache.ini
-        content: |
-          opcache.enable=1
-          opcache.memory_consumption=256
-          opcache.interned_strings_buffer=16
-          opcache.max_accelerated_files=20000
-          opcache.validate_timestamps=1
-          opcache.revalidate_freq=60
 
     - name: Push OPcache config to container
       command: >
@@ -91,7 +85,7 @@
 
     - name: Render WordPress vhost config locally
       template:
-        src: ../roles/nginx_cache/templates/nginx-wordpress.conf.j2
+        src: templates/nginx-vhost-cached.conf.j2
         dest: /tmp/{{ domain }}.conf
 
     - name: Push WordPress vhost config to container

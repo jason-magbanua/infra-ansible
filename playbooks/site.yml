@@ -1,7 +1,0 @@
----
-# Full WordPress VM deployment pipeline
-# Order matters: stack → application → performance
-
-- import_playbook: lemp.yml
-- import_playbook: wordpress.yml
-- import_playbook: performance-tuning.yml
