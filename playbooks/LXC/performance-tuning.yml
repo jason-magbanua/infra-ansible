@@ -59,7 +59,7 @@
     - name: Install OPcache
       command: >
         lxc exec {{ lxd_remote }}:{{ container_name }} --
-        env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq php-opcache
+        env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq php{{ php_version }}-opcache
       changed_when: true
 
     - name: Render OPcache config locally
