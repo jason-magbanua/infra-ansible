@@ -1,0 +1,117 @@
+---
+- name: Provision LXD container and install LEMP stack
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    lxd_remote: wp-host1
+    container_image: ubuntu-24.04
+    container_cpu: 1
+    container_memory: 512MB
+    container_disk: 5GB
+    php_version: "8.3"
+
+  pre_tasks:
+
+    - name: Ensure required variables are provided
+      assert:
+        that:
+          - container_name | default("") != ""
+        fail_msg: "container_name must be provided via -e"
+
+  tasks:
+
+############################################################
+# Container lifecycle
+############################################################
+
+    - name: Check container existence
+      command: lxc info {{ lxd_remote }}:{{ container_name }}
+      register: container_info
+      failed_when: false
+      changed_when: false
+
+    - name: Create container
+      command: >
+        lxc launch {{ lxd_remote }}:{{ container_image }}
+        {{ lxd_remote }}:{{ container_name }}
+      when: container_info.rc != 0
+
+    - name: Ensure container running
+      command: lxc start {{ lxd_remote }}:{{ container_name }}
+      register: start_result
+      failed_when: false
+      changed_when: start_result.rc == 0
+
+############################################################
+# Resource limits
+############################################################
+
+    - name: Set CPU limit
+      command: >
+        lxc config set
+        {{ lxd_remote }}:{{ container_name }}
+        limits.cpu {{ container_cpu }}
+      changed_when: true
+
+    - name: Set memory limit
+      command: >
+        lxc config set
+        {{ lxd_remote }}:{{ container_name }}
+        limits.memory {{ container_memory }}
+      changed_when: true
+
+    - name: Set root disk size (attempt set)
+      command: >
+        lxc config device set
+        {{ lxd_remote }}:{{ container_name }}
+        root size={{ container_disk }}
+      register: disk_set
+      failed_when: false
+      changed_when: disk_set.rc == 0
+
+    - name: Override root disk if needed
+      command: >
+        lxc config device override
+        {{ lxd_remote }}:{{ container_name }}
+        root size={{ container_disk }}
+      when: disk_set.rc != 0
+
+############################################################
+# Wait for container
+############################################################
+
+    - name: Wait for cloud-init
+      command: >
+        lxc exec {{ lxd_remote }}:{{ container_name }} --
+        cloud-init status --wait
+
+############################################################
+# Install packages
+############################################################
+
+    - name: Update apt cache
+      command: >
+        lxc exec {{ lxd_remote }}:{{ container_name }} --
+        apt-get update -qq
+      changed_when: false
+
+    - name: Install LEMP stack
+      command: >
+        lxc exec {{ lxd_remote }}:{{ container_name }} --
+        env DEBIAN_FRONTEND=noninteractive
+        apt-get install -y -qq
+        nginx
+        mariadb-server
+        php{{ php_version }}
+        php{{ php_version }}-fpm
+        php{{ php_version }}-mysql
+        php{{ php_version }}-curl
+        php{{ php_version }}-gd
+        php{{ php_version }}-mbstring
+        php{{ php_version }}-xml
+        php{{ php_version }}-zip
+        unzip
+        curl
+      changed_when: true

@@ -20,8 +20,9 @@ ansible/
     │   ├── setup-zfs.yml
     │   └── setup-lxc.yml
     ├── LXC/                        # LXD container workloads
-    │   ├── install-wordpress-on-container.yml
-    │   ├── performance-tuning.yml
+    │   ├── setup-lemp.yml          # provision container + install LEMP (reusable base)
+    │   ├── install-wordpress.yml   # deploy WordPress on top of LEMP
+    │   ├── performance-tuning.yml  # adaptive Nginx + PHP-FPM tuning
     │   ├── files/
     │   │   └── opcache.ini
     │   └── templates/
@@ -114,19 +115,16 @@ The token is single-use and short-lived — run all three steps in the same sess
 
 ---
 
-### LXC — WordPress container
+### LXC — containers
 
-#### Install
+#### 1. Provision container + LEMP
 
-Provision a new WordPress site inside an LXD container on `wp-host1`:
+Run first for any LXD container workload — provisions the container and installs Nginx, MariaDB, and PHP:
 
 ```bash
-ansible-playbook playbooks/LXC/install-wordpress-on-container.yml \
-  -e container_name=mysite \
-  -e domain=mysite.example.com
+ansible-playbook playbooks/LXC/setup-lemp.yml \
+  -e container_name=mysite
 ```
-
-This is idempotent — re-running against an existing container skips install steps and only updates `wp-config.php` and resource limits.
 
 ##### Default container resources
 
@@ -136,16 +134,27 @@ This is idempotent — re-running against an existing container skips install st
 | Memory   | 512 MB  |
 | Disk     | 5 GB    |
 
-Override at runtime without editing the file:
+Override at runtime:
 
 ```bash
-ansible-playbook playbooks/LXC/install-wordpress-on-container.yml \
+ansible-playbook playbooks/LXC/setup-lemp.yml \
   -e container_name=mysite \
-  -e domain=mysite.example.com \
   -e container_cpu=2 \
   -e container_memory=1GB \
   -e container_disk=10GB
 ```
+
+#### 2. Deploy WordPress
+
+Run after `setup-lemp.yml` to install and configure WordPress:
+
+```bash
+ansible-playbook playbooks/LXC/install-wordpress.yml \
+  -e container_name=mysite \
+  -e domain=mysite.example.com
+```
+
+This is idempotent — re-running skips install steps and only updates `wp-config.php` and the nginx vhost.
 
 ##### DB credentials
 
@@ -157,9 +166,9 @@ A deployment summary is printed at the end of every run.
 
 `wp-config.php` sets `WP_HOME`/`WP_SITEURL` to `https://{{ domain }}` and trusts the `X-Forwarded-Proto` header from the upstream proxy (e.g. Nginx Proxy Manager). This prevents mixed-content errors when SSL is terminated upstream.
 
-#### Performance tuning
+#### 3. Performance tuning
 
-Apply adaptive Nginx + PHP-FPM tuning to an existing container (scales to its vCPU count and RAM):
+Apply adaptive Nginx + PHP-FPM tuning — scales to the container's vCPU count and RAM. Works for any LEMP container, not just WordPress:
 
 ```bash
 ansible-playbook playbooks/LXC/performance-tuning.yml \
