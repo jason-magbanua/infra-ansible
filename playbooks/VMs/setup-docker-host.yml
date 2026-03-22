@@ -1,0 +1,79 @@
+---
+# Configures docker-host service IP aliases for Docker containers:
+#   - 10.10.200.41  vaultwarden
+#   - 10.10.200.42  authentik
+#
+# Uses a systemd oneshot service to add secondary IPs after the network comes up.
+# Does not touch the primary Netplan config managed by cloud-init.
+#
+# Usage:
+#   ansible-playbook playbooks/VMs/setup-docker-host.yml
+
+- name: Configure docker-host service IP aliases
+  hosts: docker-host
+  become: true
+
+  vars:
+    docker_service_ips:
+      - { ip: "10.10.200.41", prefix: "24" }  # vaultwarden
+      - { ip: "10.10.200.42", prefix: "24" }  # authentik
+
+  tasks:
+
+    ############################################################
+    # Systemd service — adds secondary IPs after network is up
+    ############################################################
+
+    - name: Install docker-service-ips systemd unit
+      copy:
+        dest: /etc/systemd/system/docker-service-ips.service
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Add Docker service IP aliases
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          {% for svc in docker_service_ips %}
+          ExecStart=-/sbin/ip addr add {{ svc.ip }}/{{ svc.prefix }} dev {{ ansible_facts['default_ipv4']['interface'] }}
+          {% endfor %}
+          {% for svc in docker_service_ips %}
+          ExecStop=-/sbin/ip addr del {{ svc.ip }}/{{ svc.prefix }} dev {{ ansible_facts['default_ipv4']['interface'] }}
+          {% endfor %}
+
+          [Install]
+          WantedBy=multi-user.target
+      notify:
+        - reload systemd
+        - restart docker-service-ips
+
+    - name: Enable docker-service-ips
+      systemd:
+        name: docker-service-ips
+        enabled: true
+
+    ############################################################
+    # Verify
+    ############################################################
+
+    - name: Show assigned addresses
+      command: ip -br addr show {{ ansible_facts['default_ipv4']['interface'] }}
+      register: addr_output
+      changed_when: false
+
+    - debug:
+        msg: "{{ addr_output.stdout }}"
+
+  handlers:
+
+    - name: reload systemd
+      systemd:
+        daemon_reload: true
+
+    - name: restart docker-service-ips
+      systemd:
+        name: docker-service-ips
+        state: restarted
