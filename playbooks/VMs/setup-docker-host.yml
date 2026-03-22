@@ -17,6 +17,7 @@
     docker_service_ips:
       - { ip: "10.10.200.41", prefix: "24" }  # vaultwarden
       - { ip: "10.10.200.42", prefix: "24" }  # authentik
+      - { ip: "10.10.200.43", prefix: "24" }  # wiki.js
 
   tasks:
 
