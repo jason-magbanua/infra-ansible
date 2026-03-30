@@ -1,3 +1,38 @@
 ---
-# Placeholder for common configuration applied to all hosts.
-# Add tasks here for: package updates, SSH hardening, UFW baseline, etc.
+- name: Install common packages
+  ansible.builtin.apt:
+    name:
+      # baseline
+      - net-tools
+      - curl
+      - wget
+      - htop
+      - strace
+      # editors / pagers
+      - vim
+      - less
+      # file / archive
+      - rsync
+      - unzip
+      - tree
+      - ncdu
+      # process inspection
+      - lsof
+      - iotop
+      - sysstat
+      - psmisc
+      # network
+      - dnsutils
+      - traceroute
+      - mtr
+      - iftop
+      # data
+      - jq
+      - git
+      # apt / repo
+      - ca-certificates
+      - apt-transport-https
+      - gnupg
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
