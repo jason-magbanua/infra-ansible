@@ -9,6 +9,10 @@ http:
       service: vaultwarden
       tls:
         certResolver: cloudflare
+        domains:
+          - main: "{{ traefik_domain }}"
+            sans:
+              - "*.{{ traefik_domain }}"
       middlewares:
         - secHeaders
 

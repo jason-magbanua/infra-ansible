@@ -155,7 +155,7 @@ The service unit applies the following restrictions:
 2. Add a deploy task in `roles/traefik/tasks/main.yml` (no handler needed — hot-reload handles it)
 3. Re-run the playbook
 
-Example dynamic config structure:
+Every router must include the `domains:` block so Traefik serves the wildcard cert rather than requesting an individual cert per hostname. Traefik deduplicates — the wildcard is only fetched/renewed once regardless of how many routers reference it.
 
 ```yaml
 http:
@@ -167,6 +167,10 @@ http:
       service: myservice
       tls:
         certResolver: cloudflare
+        domains:
+          - main: "{{ traefik_domain }}"
+            sans:
+              - "*.{{ traefik_domain }}"
 
   services:
     myservice:
@@ -182,5 +186,5 @@ http:
 - **`acme.json` permissions** — must be `0600` before the service starts or Let's Encrypt will refuse to write certificates. The role creates the file with correct permissions; do not change them manually.
 - **`traefik_version` must include the `v` prefix** — the GitHub release URL format requires it (e.g. `v3.3.4`, not `3.3.4`).
 - **Cloudflare token scope** — the token needs `Zone → DNS → Edit` permission scoped to your zone. A token with broader permissions works but violates least privilege.
-- **Wildcard cert is requested by the dashboard router** — `vaultwarden.yml` and `wikijs.yml` do not include a `domains:` block; they rely on the wildcard already being issued. If you remove or disable the dashboard, move the `domains:` block to another router.
+- **Every router must include the `domains:` block** — without it, Traefik falls back to requesting an individual cert for that hostname instead of reusing the wildcard. All three `conf.d/` files include this block; any new service you add must too.
 - **`ProtectSystem=strict` + log files** — if you later enable file-based logging in `traefik.yml`, add the log path to `ReadWritePaths` in the service unit, or the service will fail to write logs.
