@@ -1,0 +1,5 @@
+---
+cadvisor_ip: "10.10.200.50"   # docker-host primary IP — Prometheus scrapes directly
+cadvisor_port: 8080
+
+cadvisor_stack_dir: "/home/infra/docker/cadvisor"

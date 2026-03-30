@@ -1,0 +1,28 @@
+---
+- name: Create cAdvisor stack directory
+  ansible.builtin.file:
+    path: "{{ cadvisor_stack_dir }}"
+    state: directory
+    owner: infra
+    group: infra
+    mode: "0750"
+
+- name: Template docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ cadvisor_stack_dir }}/docker-compose.yml"
+    owner: infra
+    group: infra
+    mode: "0640"
+  notify: restart cadvisor
+
+- name: Pull cAdvisor image
+  community.docker.docker_image:
+    name: gcr.io/cadvisor/cadvisor:latest
+    source: pull
+    force_source: false
+
+- name: Deploy cAdvisor stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ cadvisor_stack_dir }}"
+    state: present

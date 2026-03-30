@@ -1,0 +1,5 @@
+---
+- name: restart cadvisor
+  community.docker.docker_compose_v2:
+    project_src: "{{ cadvisor_stack_dir }}"
+    state: restarted

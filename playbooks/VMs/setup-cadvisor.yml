@@ -1,0 +1,14 @@
+---
+# Deploys cAdvisor as a Docker Compose stack on docker-host.
+# Prometheus scrapes metrics directly at http://10.10.200.50:8080/metrics.
+# No Traefik routing needed — internal scrape only.
+#
+# Usage:
+#   ansible-playbook playbooks/VMs/setup-cadvisor.yml
+
+- name: Deploy cAdvisor on docker-host
+  hosts: docker-host
+  become: true
+
+  roles:
+    - cadvisor
