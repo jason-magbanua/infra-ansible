@@ -17,25 +17,29 @@ ansible/
 │       ├── hosts.example           # reference template
 │       └── group_vars/
 │           └── vyos.yml            # VyOS connection settings
-└── playbooks/
-    ├── VMs/                        # VM host setup
-    │   ├── setup-zfs.yml
-    │   └── setup-lxc.yml
-    ├── LXC/                        # LXD container workloads
-    │   ├── setup-lemp.yml
-    │   ├── install-wordpress.yml
-    │   ├── performance-tuning.yml
-    │   ├── files/
-    │   └── templates/
-    ├── vyos/                       # VyOS router configuration
-    │   ├── vyos.yml
-    │   └── vars/
-    │       ├── main.yml
-    │       └── vault.yml
-    └── docs/
-        ├── proxmox-vms.md          # ZFS + LXD VM host setup reference
-        ├── proxmox-lxc.md          # LXD container workloads reference
-        └── vyos.md                 # VyOS router automation reference
+├── playbooks/
+│   ├── VMs/                        # VM host setup
+│   │   ├── setup-zfs.yml
+│   │   └── setup-lxc.yml
+│   ├── LXC/                        # LXD container workloads
+│   │   ├── setup-lemp.yml
+│   │   ├── install-wordpress.yml
+│   │   ├── performance-tuning.yml
+│   │   ├── setup-traefik.yml       # Traefik reverse proxy
+│   │   ├── files/
+│   │   └── templates/
+│   └── vyos/                       # VyOS router configuration
+│       ├── vyos.yml
+│       └── vars/
+│           ├── main.yml
+│           └── vault.yml
+├── roles/
+│   └── traefik/                    # Traefik v3 install + config role
+└── docs/
+    ├── proxmox-vms.md              # ZFS + LXD VM host setup reference
+    ├── proxmox-lxc.md              # LXD container workloads reference
+    ├── vyos.md                     # VyOS router automation reference
+    └── traefik.md                  # Traefik reverse proxy reference
 ```
 
 ---
@@ -75,14 +79,15 @@ Host groups:
 
 ## Playbooks
 
-| Area         | Playbook                        | Docs                                     |
-|--------------|---------------------------------|------------------------------------------|
-| VM hosts     | `VMs/setup-zfs.yml`             | [docs/proxmox-vms.md](docs/proxmox-vms.md) |
-| VM hosts     | `VMs/setup-lxc.yml`             | [docs/proxmox-vms.md](docs/proxmox-vms.md) |
-| LXC workloads| `LXC/setup-lemp.yml`            | [docs/proxmox-lxc.md](docs/proxmox-lxc.md) |
-| LXC workloads| `LXC/install-wordpress.yml`     | [docs/proxmox-lxc.md](docs/proxmox-lxc.md) |
-| LXC workloads| `LXC/performance-tuning.yml`    | [docs/proxmox-lxc.md](docs/proxmox-lxc.md) |
-| VyOS router  | `vyos/vyos.yml`                 | [docs/vyos.md](docs/vyos.md)             |
+| Area            | Playbook                        | Docs                                           |
+|-----------------|---------------------------------|------------------------------------------------|
+| VM hosts        | `VMs/setup-zfs.yml`             | [docs/proxmox-vms.md](docs/proxmox-vms.md)     |
+| VM hosts        | `VMs/setup-lxc.yml`             | [docs/proxmox-vms.md](docs/proxmox-vms.md)     |
+| LXC workloads   | `LXC/setup-lemp.yml`            | [docs/proxmox-lxc.md](docs/proxmox-lxc.md)     |
+| LXC workloads   | `LXC/install-wordpress.yml`     | [docs/proxmox-lxc.md](docs/proxmox-lxc.md)     |
+| LXC workloads   | `LXC/performance-tuning.yml`    | [docs/proxmox-lxc.md](docs/proxmox-lxc.md)     |
+| LXC workloads   | `LXC/setup-traefik.yml`         | [docs/traefik.md](docs/traefik.md)             |
+| VyOS router     | `vyos/vyos.yml`                 | [docs/vyos.md](docs/vyos.md)                   |
 
 ---
 
@@ -92,3 +97,4 @@ Host groups:
 - `host_key_checking = False` in `ansible.cfg` is intentional for the homelab; enable it and pre-populate `known_hosts` for stricter environments
 - LXC containers run as `root` — this is expected for Proxmox unprivileged containers
 - VyOS vault file at `playbooks/vyos/vars/vault.yml` must be encrypted before committing
+- Traefik vault file at `secrets/traefik-vault.yml` must be encrypted before committing — contains the Cloudflare DNS API token
