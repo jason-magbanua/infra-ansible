@@ -1,0 +1,11 @@
+---
+- name: Install and configure Traefik reverse proxy
+  hosts: traefik
+  become: true
+  gather_facts: true
+
+  vars_files:
+    - "{{ playbook_dir }}/../../../secrets/traefik-vault.yml"
+
+  roles:
+    - traefik

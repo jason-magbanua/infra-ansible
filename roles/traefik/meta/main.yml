@@ -1,0 +1,13 @@
+---
+galaxy_info:
+  role_name: traefik
+  author: infra
+  description: Install and configure Traefik v3 reverse proxy as a native binary on Ubuntu LXC
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+
+dependencies: []

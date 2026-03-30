@@ -1,0 +1,29 @@
+# Managed by Ansible — do not edit by hand
+# Hot-reloaded by Traefik via file provider watch: true
+http:
+  routers:
+    vaultwarden:
+      rule: "Host(`vault.{{ traefik_domain }}`)"
+      entryPoints:
+        - websecure
+      service: vaultwarden
+      tls:
+        certResolver: cloudflare
+      middlewares:
+        - secHeaders
+
+  middlewares:
+    secHeaders:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+
+  services:
+    vaultwarden:
+      loadBalancer:
+        servers:
+          - url: "http://{{ vaultwarden_ip }}:{{ vaultwarden_port }}"

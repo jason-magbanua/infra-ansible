@@ -1,0 +1,11 @@
+---
+traefik_version: "v3.7.0-ea.3"
+traefik_domain: "magbanua.xyz"
+traefik_acme_email: "sysadmin@magbanua.xyz"
+
+vaultwarden_ip: "10.10.200.50"
+vaultwarden_port: 80
+wikijs_ip: "10.10.200.50"
+wikijs_port: 3000
+
+traefik_dashboard_host: "traefik.{{ traefik_domain }}"

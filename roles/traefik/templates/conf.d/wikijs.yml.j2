@@ -1,0 +1,17 @@
+# Managed by Ansible — do not edit by hand
+# Hot-reloaded by Traefik via file provider watch: true
+http:
+  routers:
+    wikijs:
+      rule: "Host(`wiki.{{ traefik_domain }}`)"
+      entryPoints:
+        - websecure
+      service: wikijs
+      tls:
+        certResolver: cloudflare
+
+  services:
+    wikijs:
+      loadBalancer:
+        servers:
+          - url: "http://{{ wikijs_ip }}:{{ wikijs_port }}"

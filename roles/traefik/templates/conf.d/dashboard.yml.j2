@@ -1,0 +1,23 @@
+# Managed by Ansible — do not edit by hand
+# Hot-reloaded by Traefik via file provider watch: true
+http:
+  routers:
+    dashboard:
+      rule: "Host(`{{ traefik_dashboard_host }}`)"
+      entryPoints:
+        - websecure
+      service: api@internal
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: "{{ traefik_domain }}"
+            sans:
+              - "*.{{ traefik_domain }}"
+      middlewares:
+        - dashboardAuth
+
+  middlewares:
+    dashboardAuth:
+      basicAuth:
+        users:
+          - "{{ traefik_dashboard_password }}"

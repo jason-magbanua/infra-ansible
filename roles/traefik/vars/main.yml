@@ -1,0 +1,14 @@
+---
+# Sensitive vars — must be provided via Ansible Vault:
+#   traefik_cf_api_token       (Cloudflare DNS API token for ACME)
+#   traefik_dashboard_password (htpasswd-formatted string, e.g. user:$apr1$...)
+#
+# Example vault file (secrets/traefik-vault.yml):
+#   traefik_cf_api_token: "your-cf-token"
+#   traefik_dashboard_password: "admin:$apr1$..."
+
+traefik_install_dir: "/usr/local/bin"
+traefik_config_dir: "/etc/traefik"
+traefik_acme_file: "{{ traefik_config_dir }}/acme.json"
+traefik_env_file: "{{ traefik_config_dir }}/traefik.env"
+traefik_binary_url: "https://github.com/traefik/traefik/releases/download/{{ traefik_version }}/traefik_{{ traefik_version }}_linux_amd64.tar.gz"

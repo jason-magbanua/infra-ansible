@@ -1,0 +1,42 @@
+# Managed by Ansible — do not edit by hand
+# Cloudflare API token is NOT stored here — it is injected via traefik.env
+
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+log:
+  level: INFO
+
+api:
+  dashboard: true
+  insecure: false
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    address: ":443"
+
+certificatesResolvers:
+  cloudflare:
+    acme:
+      email: "{{ traefik_acme_email }}"
+      storage: "{{ traefik_acme_file }}"
+      dnsChallenge:
+        provider: cloudflare
+        resolvers:
+          - "1.1.1.1:53"
+          - "1.0.0.1:53"
+        delayBeforeCheck: 30
+
+providers:
+  file:
+    directory: "{{ traefik_config_dir }}/conf.d"
+    watch: true
