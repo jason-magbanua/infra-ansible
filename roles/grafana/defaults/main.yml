@@ -1,0 +1,18 @@
+---
+grafana_version: "latest"   # set to e.g. "11.5.0" to pin a specific version
+grafana_port: 3000
+base_domain: "magbanua.xyz"
+grafana_domain: "grafana.{{ base_domain }}"
+grafana_admin_user: "admin"
+# grafana_admin_password must be provided via Ansible Vault
+
+grafana_dashboard_dir: "/var/lib/grafana/dashboards"
+
+prometheus_ip: "10.10.200.20"
+prometheus_port: 9090
+
+loki_ip: "10.10.200.23"
+loki_port: 3100
+
+alertmanager_ip: "10.10.200.21"
+alertmanager_port: 9093

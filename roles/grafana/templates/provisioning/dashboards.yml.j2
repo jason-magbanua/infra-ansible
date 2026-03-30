@@ -1,0 +1,11 @@
+# Managed by Ansible — do not edit by hand
+apiVersion: 1
+
+providers:
+  - name: homelab
+    folder: Homelab
+    type: file
+    disableDeletion: true
+    updateIntervalSeconds: 30
+    options:
+      path: {{ grafana_dashboard_dir }}

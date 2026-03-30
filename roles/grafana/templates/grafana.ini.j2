@@ -1,0 +1,23 @@
+# Managed by Ansible — do not edit by hand
+# Only overrides are listed here; all other settings use Grafana defaults.
+
+[server]
+http_addr = 0.0.0.0
+http_port = {{ grafana_port }}
+domain = {{ grafana_domain }}
+root_url = https://{{ grafana_domain }}
+
+[security]
+admin_user = {{ grafana_admin_user }}
+admin_password = {{ grafana_admin_password }}
+disable_gravatar = true
+
+[users]
+allow_sign_up = false
+
+[auth.anonymous]
+enabled = false
+
+[analytics]
+reporting_enabled = false
+check_for_updates = false

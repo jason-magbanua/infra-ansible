@@ -1,0 +1,22 @@
+---
+grafana_apt_key_url: "https://apt.grafana.com/gpg.key"
+grafana_apt_key_dest: "/etc/apt/keyrings/grafana.gpg"
+grafana_apt_repo: "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main"
+
+grafana_config_dir: "/etc/grafana"
+grafana_provisioning_dir: "/etc/grafana/provisioning"
+
+# Dashboard IDs from grafana.com
+grafana_dashboards:
+  - filename: node-exporter-full.json
+    id: 1860
+    datasource_input: DS_PROMETHEUS
+    datasource_uid: prometheus
+  - filename: traefik.json
+    id: 17346
+    datasource_input: DS_PROMETHEUS
+    datasource_uid: prometheus
+  - filename: cadvisor.json
+    id: 14282
+    datasource_input: DS_PROMETHEUS
+    datasource_uid: prometheus

@@ -1,0 +1,67 @@
+---
+- name: Create /etc/apt/keyrings directory
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install gnupg (required for GPG key dearmor)
+  ansible.builtin.apt:
+    name: gnupg
+    state: present
+    update_cache: false
+
+- name: Download Grafana GPG key (ASCII-armored)
+  ansible.builtin.get_url:
+    url: "{{ grafana_apt_key_url }}"
+    dest: /tmp/grafana.gpg.asc
+    mode: "0644"
+
+- name: Dearmor Grafana GPG key
+  ansible.builtin.command:
+    cmd: gpg --batch --yes --dearmor -o {{ grafana_apt_key_dest }} /tmp/grafana.gpg.asc
+  changed_when: false
+
+- name: Add Grafana APT repository
+  ansible.builtin.apt_repository:
+    repo: "{{ grafana_apt_repo }}"
+    filename: grafana
+    state: present
+    update_cache: true
+
+- name: Install Grafana
+  ansible.builtin.apt:
+    name: "{{ 'grafana' if grafana_version == 'latest' else 'grafana=' + grafana_version }}"
+    state: "{{ 'latest' if grafana_version == 'latest' else 'present' }}"
+
+- name: Template grafana.ini
+  ansible.builtin.template:
+    src: grafana.ini.j2
+    dest: "{{ grafana_config_dir }}/grafana.ini"
+    owner: root
+    group: grafana
+    mode: "0640"
+  notify: restart grafana-server
+
+- name: Create dashboard storage directory
+  ansible.builtin.file:
+    path: "{{ grafana_dashboard_dir }}"
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: "0750"
+
+- name: Configure datasources
+  ansible.builtin.include_tasks: datasources.yml
+
+- name: Configure dashboards
+  ansible.builtin.include_tasks: dashboards.yml
+
+- name: Enable and start grafana-server
+  ansible.builtin.systemd:
+    name: grafana-server
+    enabled: true
+    state: started
+    daemon_reload: true

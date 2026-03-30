@@ -21,14 +21,13 @@ ansible/
 │   ├── VMs/                        # VM host setup
 │   │   ├── setup-zfs.yml
 │   │   └── setup-lxc.yml
-│   ├── LXC/                        # LXD container workloads
+│   ├── LXC/                        # LXC container workloads
 │   │   ├── setup-lemp.yml
 │   │   ├── install-wordpress.yml
 │   │   ├── performance-tuning.yml
 │   │   ├── setup-traefik.yml       # Traefik reverse proxy
 │   │   ├── setup-prometheus.yml    # Prometheus monitoring
-│   │   ├── files/
-│   │   └── templates/
+│   │   └── setup-grafana.yml       # Grafana dashboards
 │   └── vyos/                       # VyOS router configuration
 │       ├── vyos.yml
 │       └── vars/
@@ -38,13 +37,16 @@ ansible/
 │   ├── common/                     # Baseline config applied to all hosts
 │   ├── traefik/                    # Traefik v3 install + config role
 │   ├── prometheus/                 # Prometheus v3 install + config role
+│   ├── grafana/                    # Grafana install + provisioning role
 │   └── node_exporter/              # Prometheus Node Exporter (all hosts)
+├── site.yml                        # Applies common + node_exporter to all hosts
 └── docs/
     ├── proxmox-vms.md              # ZFS + LXD VM host setup reference
     ├── proxmox-lxc.md              # LXD container workloads reference
     ├── vyos.md                     # VyOS router automation reference
     ├── traefik.md                  # Traefik reverse proxy reference
-    └── prometheus.md               # Prometheus monitoring reference
+    ├── prometheus.md               # Prometheus monitoring reference
+    └── grafana.md                  # Grafana dashboards reference
 ```
 
 ---
@@ -93,6 +95,7 @@ Host groups:
 | LXC workloads   | `LXC/performance-tuning.yml`    | [docs/proxmox-lxc.md](docs/proxmox-lxc.md)     |
 | LXC workloads   | `LXC/setup-traefik.yml`         | [docs/traefik.md](docs/traefik.md)             |
 | LXC workloads   | `LXC/setup-prometheus.yml`      | [docs/prometheus.md](docs/prometheus.md)       |
+| LXC workloads   | `LXC/setup-grafana.yml`         | [docs/grafana.md](docs/grafana.md)             |
 | All hosts       | `site.yml`                      | (common + node_exporter on every host)         |
 | VyOS router     | `vyos/vyos.yml`                 | [docs/vyos.md](docs/vyos.md)                   |
 
@@ -105,3 +108,4 @@ Host groups:
 - LXC containers run as `root` — this is expected for Proxmox unprivileged containers
 - VyOS vault file at `playbooks/vyos/vars/vault.yml` must be encrypted before committing
 - Traefik vault file at `secrets/traefik-vault.yml` must be encrypted before committing — contains the Cloudflare DNS API token
+- Grafana vault file at `secrets/grafana-vault.yml` must be encrypted before committing — contains the Grafana admin password

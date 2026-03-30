@@ -9,3 +9,6 @@ wikijs_ip: "10.10.200.43"
 wikijs_port: 3000
 
 traefik_dashboard_host: "traefik.{{ traefik_domain }}"
+
+grafana_ip: "10.10.200.22"
+grafana_port: 3000

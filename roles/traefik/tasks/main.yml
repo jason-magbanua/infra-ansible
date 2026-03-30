@@ -79,6 +79,14 @@
     group: traefik
     mode: "0640"
 
+- name: Deploy dynamic config — grafana
+  ansible.builtin.template:
+    src: conf.d/grafana.yml.j2
+    dest: "{{ traefik_config_dir }}/conf.d/grafana.yml"
+    owner: traefik
+    group: traefik
+    mode: "0640"
+
 - name: Create acme.json with correct permissions
   ansible.builtin.file:
     path: "{{ traefik_acme_file }}"

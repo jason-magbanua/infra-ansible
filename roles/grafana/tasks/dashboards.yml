@@ -1,0 +1,56 @@
+---
+- name: Deploy dashboard provisioning config
+  ansible.builtin.template:
+    src: provisioning/dashboards.yml.j2
+    dest: "{{ grafana_provisioning_dir }}/dashboards/dashboards.yml"
+    owner: root
+    group: grafana
+    mode: "0640"
+  notify: restart grafana-server
+
+- name: Create local dashboard cache directory
+  ansible.builtin.file:
+    path: "{{ role_path }}/files/dashboards"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  run_once: true
+  become: false
+
+- name: Download dashboard JSON files to control machine
+  ansible.builtin.get_url:
+    url: "https://grafana.com/api/dashboards/{{ item.id }}/revisions/latest/download"
+    dest: "{{ role_path }}/files/dashboards/{{ item.filename }}"
+    force: false
+    mode: "0644"
+  loop: "{{ grafana_dashboards }}"
+  delegate_to: localhost
+  run_once: true
+  become: false
+
+- name: Copy dashboard JSON files to target host
+  ansible.builtin.copy:
+    src: "dashboards/{{ item.filename }}"
+    dest: "{{ grafana_dashboard_dir }}/{{ item.filename }}"
+    owner: grafana
+    group: grafana
+    mode: "0640"
+  loop: "{{ grafana_dashboards }}"
+
+# Grafana's file provisioner does not process __inputs substitution.
+# Replace the ${DS_*} input variables in the JSON with explicit UIDs so
+# panels resolve correctly without manual datasource mapping in the UI.
+
+- name: Replace datasource input variables in dashboard JSON (modern uid format)
+  ansible.builtin.replace:
+    path: "{{ grafana_dashboard_dir }}/{{ item.filename }}"
+    regexp: '"uid":\s*"\$\{DS_[A-Z0-9_]+\}"'
+    replace: '"uid": "{{ item.datasource_uid }}"'
+  loop: "{{ grafana_dashboards }}"
+
+- name: Replace datasource input variables in dashboard JSON (legacy string format)
+  ansible.builtin.replace:
+    path: "{{ grafana_dashboard_dir }}/{{ item.filename }}"
+    regexp: '"datasource":\s*"\$\{DS_[A-Z0-9_]+\}"'
+    replace: '"datasource": "{{ item.datasource_uid }}"'
+  loop: "{{ grafana_dashboards }}"

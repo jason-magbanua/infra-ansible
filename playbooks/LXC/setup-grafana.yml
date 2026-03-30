@@ -1,0 +1,11 @@
+---
+- name: Install and configure Grafana
+  hosts: grafana
+  become: true
+  gather_facts: true
+  vars_files:
+    - "{{ playbook_dir }}/../../../secrets/grafana-vault.yml"
+  vars:
+    base_domain: "magbanua.xyz"
+  roles:
+    - grafana

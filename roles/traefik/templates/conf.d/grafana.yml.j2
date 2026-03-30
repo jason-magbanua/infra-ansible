@@ -1,0 +1,21 @@
+# Managed by Ansible — do not edit by hand
+# Hot-reloaded by Traefik via file provider watch: true
+http:
+  routers:
+    grafana:
+      rule: "Host(`grafana.{{ traefik_domain }}`)"
+      entryPoints:
+        - websecure
+      service: grafana
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: "{{ traefik_domain }}"
+            sans:
+              - "*.{{ traefik_domain }}"
+
+  services:
+    grafana:
+      loadBalancer:
+        servers:
+          - url: "http://{{ grafana_ip }}:{{ grafana_port }}"
