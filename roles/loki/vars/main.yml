@@ -1,0 +1,6 @@
+---
+loki_user: loki
+loki_install_dir: "/usr/local/bin"
+loki_config_path: "/etc/loki"
+loki_storage_path: "/var/lib/loki"
+loki_binary_url: "https://github.com/grafana/loki/releases/download/v{{ loki_version }}/loki-linux-amd64.zip"

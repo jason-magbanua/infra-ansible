@@ -1,0 +1,86 @@
+---
+- name: Install unzip (required to extract Loki binary)
+  ansible.builtin.apt:
+    name: unzip
+    state: present
+    update_cache: false
+
+- name: Create loki system user
+  ansible.builtin.user:
+    name: "{{ loki_user }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: /nonexistent
+    create_home: false
+
+- name: Create config and data directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ loki_user }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ loki_config_path }}", owner: root, mode: "0755" }
+    - { path: "{{ loki_storage_path }}", owner: "{{ loki_user }}", mode: "0750" }
+    - { path: "{{ loki_storage_path }}/chunks", owner: "{{ loki_user }}", mode: "0750" }
+    - { path: "{{ loki_storage_path }}/rules", owner: "{{ loki_user }}", mode: "0750" }
+
+- name: Download Loki archive
+  ansible.builtin.get_url:
+    url: "{{ loki_binary_url }}"
+    dest: "/tmp/loki-{{ loki_version }}.linux-amd64.zip"
+    mode: "0644"
+  register: loki_download
+
+- name: Check if loki binary exists
+  ansible.builtin.stat:
+    path: "{{ loki_install_dir }}/loki"
+  register: loki_binary
+
+- name: Extract Loki binary from archive
+  ansible.builtin.unarchive:
+    src: "/tmp/loki-{{ loki_version }}.linux-amd64.zip"
+    dest: "/tmp"
+    remote_src: true
+    include:
+      - "loki-linux-amd64"
+  when: loki_download.changed or not loki_binary.stat.exists
+
+- name: Install Loki binary
+  ansible.builtin.copy:
+    src: "/tmp/loki-linux-amd64"
+    dest: "{{ loki_install_dir }}/loki"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0755"
+  when: loki_download.changed or not loki_binary.stat.exists
+  notify: restart loki
+
+- name: Template loki-config.yml
+  ansible.builtin.template:
+    src: loki-config.yml.j2
+    dest: "{{ loki_config_path }}/loki-config.yml"
+    owner: root
+    group: "{{ loki_user }}"
+    mode: "0640"
+  notify: restart loki
+
+- name: Deploy systemd service unit
+  ansible.builtin.template:
+    src: loki.service.j2
+    dest: /etc/systemd/system/loki.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - reload systemd
+    - restart loki
+
+- name: Enable and start loki service
+  ansible.builtin.systemd:
+    name: loki
+    enabled: true
+    state: started
+    daemon_reload: true

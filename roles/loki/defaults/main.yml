@@ -1,0 +1,8 @@
+---
+loki_version: "3.4.2"
+loki_port: 3100
+loki_grpc_port: 9096
+loki_retention_period: "30d"
+
+alertmanager_ip: "10.10.200.21"
+alertmanager_port: 9093

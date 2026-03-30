@@ -1,0 +1,70 @@
+---
+- name: Create /etc/apt/keyrings directory
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install gnupg (required for GPG key dearmor)
+  ansible.builtin.apt:
+    name: gnupg
+    state: present
+    update_cache: false
+
+- name: Download Grafana GPG key (ASCII-armored)
+  ansible.builtin.get_url:
+    url: "{{ alloy_apt_key_url }}"
+    dest: /tmp/grafana.gpg.asc
+    mode: "0644"
+
+- name: Dearmor Grafana GPG key
+  ansible.builtin.command:
+    cmd: gpg --batch --yes --dearmor -o {{ alloy_apt_key_dest }} /tmp/grafana.gpg.asc
+  changed_when: false
+
+- name: Add Grafana APT repository
+  ansible.builtin.apt_repository:
+    repo: "{{ alloy_apt_repo }}"
+    filename: grafana
+    state: present
+    update_cache: true
+
+- name: Install Alloy
+  ansible.builtin.apt:
+    name: "{{ 'alloy' if alloy_version == 'latest' else 'alloy=' + alloy_version }}"
+    state: "{{ 'latest' if alloy_version == 'latest' else 'present' }}"
+
+- name: Ensure alloy config directory exists
+  ansible.builtin.file:
+    path: "{{ alloy_config_dir }}"
+    state: directory
+    owner: root
+    group: alloy
+    mode: "0750"
+
+- name: Template Alloy config
+  ansible.builtin.template:
+    src: config.alloy.j2
+    dest: "{{ alloy_config_file }}"
+    owner: root
+    group: alloy
+    mode: "0640"
+  notify: restart alloy
+
+- name: Template Alloy environment file
+  ansible.builtin.template:
+    src: alloy.env.j2
+    dest: "{{ alloy_env_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart alloy
+
+- name: Enable and start alloy service
+  ansible.builtin.systemd:
+    name: alloy
+    enabled: true
+    state: started
+    daemon_reload: true

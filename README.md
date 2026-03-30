@@ -30,7 +30,9 @@ ansible/
 │   │   ├── performance-tuning.yml
 │   │   ├── setup-traefik.yml       # Traefik reverse proxy
 │   │   ├── setup-prometheus.yml    # Prometheus monitoring
-│   │   └── setup-grafana.yml       # Grafana dashboards
+│   │   ├── setup-grafana.yml       # Grafana dashboards
+│   │   ├── setup-loki.yml          # Loki log aggregation
+│   │   └── setup-alloy.yml         # Grafana Alloy agent
 │   └── vyos/                       # VyOS router configuration
 │       ├── vyos.yml
 │       └── vars/
@@ -40,6 +42,8 @@ ansible/
 │   ├── traefik/                    # Traefik v3 install + config role
 │   ├── prometheus/                 # Prometheus v3 install + config role
 │   ├── grafana/                    # Grafana install + provisioning role
+│   ├── loki/                       # Loki v3 log aggregation role
+│   ├── alloy/                      # Grafana Alloy agent role
 │   ├── node_exporter/              # Prometheus Node Exporter (all hosts)
 │   └── cadvisor/                   # cAdvisor Docker Compose stack
 ├── site.yml                        # Applies common + node_exporter to all hosts
@@ -49,7 +53,8 @@ ansible/
     ├── vyos.md                     # VyOS router automation reference
     ├── traefik.md                  # Traefik reverse proxy reference
     ├── prometheus.md               # Prometheus monitoring reference
-    └── grafana.md                  # Grafana dashboards reference
+    ├── grafana.md                  # Grafana dashboards reference
+    └── loki.md                     # Loki log aggregation + Alloy agent reference
 ```
 
 Vault-encrypted secrets live outside this directory at `/opt/infra/secrets/`.
@@ -104,6 +109,8 @@ Host groups:
 | LXC workloads   | `LXC/setup-traefik.yml`         | [docs/traefik.md](docs/traefik.md)             |
 | LXC workloads   | `LXC/setup-prometheus.yml`      | [docs/prometheus.md](docs/prometheus.md)       |
 | LXC workloads   | `LXC/setup-grafana.yml`         | [docs/grafana.md](docs/grafana.md)             |
+| LXC workloads   | `LXC/setup-loki.yml`            | [docs/loki.md](docs/loki.md)                   |
+| LXC workloads   | `LXC/setup-alloy.yml`           | [docs/loki.md](docs/loki.md)                   |
 | All hosts       | `site.yml`                      | applies `common` + `node_exporter` to all hosts |
 | VyOS router     | `vyos/vyos.yml`                 | [docs/vyos.md](docs/vyos.md)                   |
 
@@ -125,3 +132,4 @@ ansible-playbook playbooks/vyos/vyos.yml --ask-vault-pass
 - VyOS vault file at `/opt/infra/secrets/vyos-vault.yml` must be encrypted before committing — contains WireGuard keys and the VyOS user password
 - Traefik vault file at `/opt/infra/secrets/traefik-vault.yml` must be encrypted before committing — contains the Cloudflare DNS API token
 - Grafana vault file at `/opt/infra/secrets/grafana-vault.yml` must be encrypted before committing — contains the Grafana admin password
+- Loki and Alloy have no vault-encrypted secrets in the current homelab configuration

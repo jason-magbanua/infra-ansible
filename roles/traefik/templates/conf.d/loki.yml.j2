@@ -1,0 +1,21 @@
+# Managed by Ansible — do not edit by hand
+# Hot-reloaded by Traefik via file provider watch: true
+http:
+  routers:
+    loki:
+      rule: "Host(`loki.{{ traefik_domain }}`)"
+      entryPoints:
+        - websecure
+      service: loki
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: "{{ traefik_domain }}"
+            sans:
+              - "*.{{ traefik_domain }}"
+
+  services:
+    loki:
+      loadBalancer:
+        servers:
+          - url: "http://{{ loki_ip }}:{{ loki_port }}"

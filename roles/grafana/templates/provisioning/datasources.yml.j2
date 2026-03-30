@@ -11,13 +11,12 @@ datasources:
     access: proxy
     editable: false
 
-  # Loki — uncomment when the Loki LXC ({{ loki_ip }}:{{ loki_port }}) is deployed
-  # - name: Loki
-  #   type: loki
-  #   uid: loki
-  #   url: http://{{ loki_ip }}:{{ loki_port }}
-  #   access: proxy
-  #   editable: false
+  - name: Loki
+    type: loki
+    uid: loki
+    url: http://{{ loki_ip }}:{{ loki_port }}
+    access: proxy
+    editable: false
 
   # Alertmanager — uncomment when the Alertmanager LXC ({{ alertmanager_ip }}:{{ alertmanager_port }}) is deployed
   # - name: Alertmanager
