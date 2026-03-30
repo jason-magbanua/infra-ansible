@@ -1,0 +1,12 @@
+---
+# site.yml — applies common roles to all hosts, then service-specific roles
+# Run: ansible-playbook site.yml
+# Limit to a subset: ansible-playbook site.yml --limit prometheus
+
+- name: Apply common configuration
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - common
+    - node_exporter

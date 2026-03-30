@@ -1,0 +1,9 @@
+---
+node_exporter_version: "1.9.0"
+node_exporter_port: 9100
+node_exporter_web_listen: "0.0.0.0:9100"
+
+# Set to true to open port 9100 via UFW (requires community.general collection)
+# Restricts access to the server subnet only (10.10.200.0/24)
+node_exporter_configure_ufw: false
+node_exporter_ufw_source: "10.10.200.0/24"

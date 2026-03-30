@@ -1,0 +1,3 @@
+---
+# Placeholder for common configuration applied to all hosts.
+# Add tasks here for: package updates, SSH hardening, UFW baseline, etc.

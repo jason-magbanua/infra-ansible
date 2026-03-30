@@ -1,0 +1,62 @@
+---
+- name: Create node_exporter system user
+  ansible.builtin.user:
+    name: node_exporter
+    system: true
+    shell: /usr/sbin/nologin
+    home: /nonexistent
+    create_home: false
+
+- name: Download node_exporter archive
+  ansible.builtin.get_url:
+    url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+    dest: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+    mode: "0644"
+  register: node_exporter_download
+
+- name: Extract node_exporter binary
+  ansible.builtin.unarchive:
+    src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+    dest: /usr/local/bin
+    remote_src: true
+    include:
+      - "node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+    extra_opts:
+      - "--strip-components=1"
+    owner: root
+    group: root
+    mode: "0755"
+  when: node_exporter_download.changed
+  notify: restart node_exporter
+
+- name: Verify node_exporter binary
+  ansible.builtin.command:
+    cmd: /usr/local/bin/node_exporter --version
+  changed_when: false
+
+- name: Deploy systemd service unit
+  ansible.builtin.template:
+    src: node_exporter.service.j2
+    dest: /etc/systemd/system/node_exporter.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - reload systemd
+    - restart node_exporter
+
+- name: Enable and start node_exporter service
+  ansible.builtin.systemd:
+    name: node_exporter
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Allow node_exporter port via UFW
+  community.general.ufw:
+    rule: allow
+    port: "{{ node_exporter_port }}"
+    proto: tcp
+    src: "{{ node_exporter_ufw_source }}"
+    comment: "node_exporter — Prometheus scrape"
+  when: node_exporter_configure_ufw

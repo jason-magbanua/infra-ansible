@@ -35,8 +35,10 @@ ansible/
 │           ├── main.yml
 │           └── vault.yml
 ├── roles/
+│   ├── common/                     # Baseline config applied to all hosts
 │   ├── traefik/                    # Traefik v3 install + config role
-│   └── prometheus/                 # Prometheus v3 install + config role
+│   ├── prometheus/                 # Prometheus v3 install + config role
+│   └── node_exporter/              # Prometheus Node Exporter (all hosts)
 └── docs/
     ├── proxmox-vms.md              # ZFS + LXD VM host setup reference
     ├── proxmox-lxc.md              # LXD container workloads reference
@@ -91,6 +93,7 @@ Host groups:
 | LXC workloads   | `LXC/performance-tuning.yml`    | [docs/proxmox-lxc.md](docs/proxmox-lxc.md)     |
 | LXC workloads   | `LXC/setup-traefik.yml`         | [docs/traefik.md](docs/traefik.md)             |
 | LXC workloads   | `LXC/setup-prometheus.yml`      | [docs/prometheus.md](docs/prometheus.md)       |
+| All hosts       | `site.yml`                      | (common + node_exporter on every host)         |
 | VyOS router     | `vyos/vyos.yml`                 | [docs/vyos.md](docs/vyos.md)                   |
 
 ---
