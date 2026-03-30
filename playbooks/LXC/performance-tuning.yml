@@ -60,7 +60,7 @@
       command: >
         lxc exec {{ lxd_remote }}:{{ container_name }} --
         env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq php{{ php_version }}-opcache
-      changed_when: true
+      changed_when: false
 
     - name: Render OPcache config locally
       copy:
@@ -72,6 +72,7 @@
         lxc file push --uid 0 --gid 0
         /tmp/10-opcache.ini
         {{ lxd_remote }}:{{ container_name }}/etc/php/{{ php_version }}/fpm/conf.d/10-opcache.ini
+      notify: restart php-fpm
 
 ############################################################
 # FastCGI cache + WordPress vhost
@@ -81,7 +82,7 @@
       command: >
         lxc exec {{ lxd_remote }}:{{ container_name }} --
         bash -c "mkdir -p /var/cache/nginx && chown www-data:www-data /var/cache/nginx && chmod 755 /var/cache/nginx"
-      changed_when: true
+      changed_when: false
 
     - name: Render WordPress vhost config locally
       template:
@@ -93,12 +94,14 @@
         lxc file push --uid 0 --gid 0
         /tmp/{{ domain }}.conf
         {{ lxd_remote }}:{{ container_name }}/etc/nginx/sites-available/{{ domain }}
+      notify: reload nginx
 
     - name: Enable WordPress vhost
       command: >
         lxc exec {{ lxd_remote }}:{{ container_name }} --
         ln -sf /etc/nginx/sites-available/{{ domain }}
         /etc/nginx/sites-enabled/{{ domain }}
+      changed_when: false
 
 ############################################################
 # PHP-FPM pool
@@ -108,6 +111,7 @@
       command: >
         lxc exec {{ lxd_remote }}:{{ container_name }} --
         rm -f /etc/php/{{ php_version }}/fpm/pool.d/www.conf
+      changed_when: false
 
     - name: Render PHP-FPM pool config locally
       template:
@@ -119,6 +123,7 @@
         lxc file push --uid 0 --gid 0
         /tmp/php-fpm-www.conf
         {{ lxd_remote }}:{{ container_name }}/etc/php/{{ php_version }}/fpm/pool.d/www.conf
+      notify: restart php-fpm
 
 ############################################################
 # Nginx global config
@@ -134,17 +139,18 @@
         lxc file push --uid 0 --gid 0
         /tmp/nginx.conf
         {{ lxd_remote }}:{{ container_name }}/etc/nginx/nginx.conf
+      notify: reload nginx
 
-############################################################
-# Restart services
-############################################################
+  handlers:
 
-    - name: Restart PHP-FPM
+    - name: restart php-fpm
       command: >
         lxc exec {{ lxd_remote }}:{{ container_name }} --
         systemctl restart php{{ php_version }}-fpm
+      changed_when: false
 
-    - name: Reload Nginx
+    - name: reload nginx
       command: >
         lxc exec {{ lxd_remote }}:{{ container_name }} --
         systemctl reload nginx
+      changed_when: false

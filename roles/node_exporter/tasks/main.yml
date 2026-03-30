@@ -14,6 +14,11 @@
     mode: "0644"
   register: node_exporter_download
 
+- name: Check if node_exporter binary exists
+  ansible.builtin.stat:
+    path: /usr/local/bin/node_exporter
+  register: node_exporter_binary
+
 - name: Extract node_exporter binary
   ansible.builtin.unarchive:
     src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
@@ -26,7 +31,7 @@
     owner: root
     group: root
     mode: "0755"
-  when: node_exporter_download.changed
+  when: node_exporter_download.changed or not node_exporter_binary.stat.exists
   notify: restart node_exporter
 
 - name: Verify node_exporter binary

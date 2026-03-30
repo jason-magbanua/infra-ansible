@@ -25,6 +25,11 @@
     mode: "0644"
   register: prometheus_download
 
+- name: Check if prometheus binary exists
+  ansible.builtin.stat:
+    path: "{{ prometheus_install_dir }}/prometheus"
+  register: prometheus_binary
+
 - name: Extract prometheus and promtool binaries
   ansible.builtin.unarchive:
     src: "/tmp/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
@@ -38,7 +43,7 @@
     owner: root
     group: root
     mode: "0755"
-  when: prometheus_download.changed
+  when: prometheus_download.changed or not prometheus_binary.stat.exists
   notify: restart prometheus
 
 - name: Template prometheus.yml
