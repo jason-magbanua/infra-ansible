@@ -11,13 +11,13 @@ Internet
    │
   eth0 (DHCP) ──── transit0, Home ISP uplink
    │
- VyOS (172.16.1.182 / 192.168.8.182)
+ VyOS (172.16.1.182 / 192.168.8.182 / 10.10.200.1)
    │
-  wg0 ──────────── 10.255.255.2/29 — WireGuard overlay to VPS (primary egress)
+  wg0 ──────────── 10.255.255.2/29 — WireGuard overlay to OVH VPS (remote access)
    │
   eth1 ─────────── 802.1Q trunk to Proxmox host
-    ├── vlan100 ── 10.10.100.1/29 — DMZ (public services)
-    └── vlan200 ── 10.10.200.1/27 — SERVERS (internal)
+    ├── vlan100 ── 10.10.100.1/29 — DMZ (public services via wg0)
+    └── vlan200 ── 10.10.200.1/24 — SERVERS (internal, internet via wg0)
 ```
 
 Policy-based routing (PBR) sends all egress from VLAN100/VLAN200 through `wg0`. The `prerouting raw` firewall rules exempt local inter-VLAN traffic and known private subnets from PBR.
@@ -86,7 +86,7 @@ ansible-playbook playbooks/vyos/vyos.yml --tags interfaces,routes
 | `auth`       | Login user, encrypted password, SSH public key                |
 | `interfaces` | eth0 (WAN), eth1 (trunk), VLAN 100/200 subinterfaces, wg0    |
 | `firewall`   | IPv4 forward filter rules + prerouting raw rules (PBR)        |
-| `dhcp`       | DHCP server for the SERVERS subnet (10.10.200.0/27)           |
+| `dhcp`       | DHCP server for the SERVERS subnet (10.10.200.0/24)           |
 | `ntp`        | NTP servers and allowed client addresses                      |
 | `ssh`        | SSH listen addresses                                          |
 | `routes`     | Static routes                                                 |
@@ -104,11 +104,11 @@ Key variables — see the file for the full list.
 | `vyos_hostname`             | Router hostname (`vyos`)                     |
 | `vyos_timezone`             | System timezone (`Asia/Manila`)              |
 | `vyos_vlan100_address`      | DMZ gateway IP (`10.10.100.1/29`)            |
-| `vyos_vlan200_address`      | SERVERS gateway IP (`10.10.200.1/27`)        |
+| `vyos_vlan200_address`      | SERVERS gateway IP (`10.10.200.1/24`)        |
 | `vyos_wg0_address`          | WireGuard tunnel address (`10.255.255.2/29`) |
 | `vyos_dhcp_network_name`    | DHCP shared network name (`SERVERS`)         |
-| `vyos_dhcp_subnet`          | DHCP subnet (`10.10.200.0/27`)               |
-| `vyos_dhcp_range_start/stop`| DHCP range (`.11` – `.30`)                  |
+| `vyos_dhcp_subnet`          | DHCP subnet (`10.10.200.0/24`)               |
+| `vyos_dhcp_range_start/stop`| DHCP range (`.101` – `.200`)                 |
 | `vyos_ssh_listen_addresses` | SSH bind addresses                           |
 | `vyos_static_routes`        | List of `{prefix, next_hop, description}`    |
 
@@ -168,9 +168,17 @@ Then apply with `--tags firewall`.
 
 ---
 
-## Adding Static Routes
+## Static Routes
 
-Add an entry to `vyos_static_routes` in `vars/main.yml`:
+Current routes in `vars/main.yml`:
+
+| Prefix | Next Hop | Description |
+|---|---|---|
+| `10.200.10.0/24` | `10.10.200.15` | wp-host1 container subnet |
+| `172.16.100.0/24` | `10.255.255.2` | Remote subnet behind OVH VPS (via wg0) |
+| `172.16.196.0/24` | `10.255.255.2` | Remote OVH OPNsense network (via wg0) |
+
+To add a new route, append to `vyos_static_routes` in `vars/main.yml`:
 
 ```yaml
 vyos_static_routes:
