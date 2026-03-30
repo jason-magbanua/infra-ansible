@@ -13,14 +13,12 @@ Internet
    │
  VyOS (172.16.1.182 / 192.168.8.182 / 10.10.200.1)
    │
-  wg0 ──────────── 10.255.255.2/29 — WireGuard overlay to OVH VPS (remote access)
+  wg0 ──────────── 10.255.255.2/29 — WireGuard tunnel to OVH VPS (51.79.161.145)
    │
   eth1 ─────────── 802.1Q trunk to Proxmox host
-    ├── vlan100 ── 10.10.100.1/29 — DMZ (public services via wg0)
-    └── vlan200 ── 10.10.200.1/24 — SERVERS (internal, internet via wg0)
+    ├── vlan100 ── 10.10.100.1/29 — DMZ (public services)
+    └── vlan200 ── 10.10.200.1/24 — SERVERS (internal)
 ```
-
-Policy-based routing (PBR) sends all egress from VLAN100/VLAN200 through `wg0`. The `prerouting raw` firewall rules exempt local inter-VLAN traffic and known private subnets from PBR.
 
 ---
 
@@ -72,7 +70,7 @@ ansible-playbook playbooks/vyos/vyos.yml
 **Run only specific sections using tags:**
 
 ```bash
-ansible-playbook playbooks/vyos/vyos.yml --tags firewall
+ansible-playbook playbooks/vyos/vyos.yml --tags interfaces
 ansible-playbook playbooks/vyos/vyos.yml --tags interfaces,routes
 ```
 
@@ -80,16 +78,15 @@ ansible-playbook playbooks/vyos/vyos.yml --tags interfaces,routes
 
 ## Tags Reference
 
-| Tag          | What it configures                                             |
-|--------------|----------------------------------------------------------------|
-| `system`     | Hostname, timezone, commit revisions, console, syslog         |
-| `auth`       | Login user, encrypted password, SSH public key                |
-| `interfaces` | eth0 (WAN), eth1 (trunk), VLAN 100/200 subinterfaces, wg0    |
-| `firewall`   | IPv4 forward filter rules + prerouting raw rules (PBR)        |
-| `dhcp`       | DHCP server for the SERVERS subnet (10.10.200.0/24)           |
-| `ntp`        | NTP servers and allowed client addresses                      |
-| `ssh`        | SSH listen addresses                                          |
-| `routes`     | Static routes                                                 |
+| Tag          | What it configures                                           |
+|--------------|--------------------------------------------------------------|
+| `system`     | Hostname, timezone, commit revisions, console, syslog        |
+| `auth`       | Login user, encrypted password, SSH public key               |
+| `interfaces` | eth0 (WAN), eth1 (trunk), VLAN 100/200 subinterfaces, wg0   |
+| `dhcp`       | DHCP server for the SERVERS subnet (10.10.200.0/24)          |
+| `ntp`        | NTP servers and allowed client addresses                     |
+| `ssh`        | SSH listen addresses                                         |
+| `routes`     | Static routes                                                |
 
 ---
 
@@ -106,9 +103,12 @@ Key variables — see the file for the full list.
 | `vyos_vlan100_address`      | DMZ gateway IP (`10.10.100.1/29`)            |
 | `vyos_vlan200_address`      | SERVERS gateway IP (`10.10.200.1/24`)        |
 | `vyos_wg0_address`          | WireGuard tunnel address (`10.255.255.2/29`) |
+| `vyos_wg0_peer_endpoint`    | VPS public IP:port (`51.79.161.145:51830`)   |
+| `vyos_wg0_keepalive`        | WireGuard keepalive interval (`25`)          |
 | `vyos_dhcp_network_name`    | DHCP shared network name (`SERVERS`)         |
 | `vyos_dhcp_subnet`          | DHCP subnet (`10.10.200.0/24`)               |
 | `vyos_dhcp_range_start/stop`| DHCP range (`.101` – `.200`)                 |
+| `vyos_dhcp_lease`           | Lease time in seconds (`86400`)              |
 | `vyos_ssh_listen_addresses` | SSH bind addresses                           |
 | `vyos_static_routes`        | List of `{prefix, next_hop, description}`    |
 
@@ -118,59 +118,73 @@ Key variables — see the file for the full list.
 |--------------------------------|--------------------------------------|
 | `vyos_user_encrypted_password` | SHA-512 crypt hash for the vyos user |
 | `vyos_wg0_private_key`         | WireGuard private key for wg0        |
-| `vyos_wg0_peer_address`        | VPS public IP (endpoint)             |
 | `vyos_wg0_peer_public_key`     | VPS WireGuard public key             |
 
 ---
 
-## Firewall Logic
+## Interfaces
 
-### IPv4 Forward Filter
+| Interface    | Address           | Description                                    |
+|--------------|-------------------|------------------------------------------------|
+| `eth0`       | DHCP              | WAN uplink (Home ISP)                          |
+| `eth1`       | —                 | 802.1Q trunk to Proxmox host                   |
+| `eth1.100`   | `10.10.100.1/29`  | VLAN 100 — DMZ                                 |
+| `eth1.200`   | `10.10.200.1/24`  | VLAN 200 — SERVERS                             |
+| `wg0`        | `10.255.255.2/29` | WireGuard tunnel to OVH VPS                    |
+| `lo`         | —                 | Loopback (reserved for router services)        |
 
-Controls traffic routed between interfaces.
-
-| Rule | Action | Description                                |
-|------|--------|--------------------------------------------|
-| 1    | accept | Established/related connections            |
-| 10   | accept | Home LAN (172.16.0.0/12) SSH → DMZ port 22|
-| 11   | accept | Home LAN ping → DMZ                       |
-| 20   | drop   | DMZ SSH → SERVERS blocked                 |
-| 28   | accept | NPM (10.10.100.2) → pve1 (172.16.1.8)     |
-| 29   | accept | NPM (10.10.100.2) → streaming-aio          |
-| 30   | drop   | DMZ → Home LAN blocked                    |
-| 40   | drop   | DMZ → 192.168.0.0/16 blocked              |
-
-### IPv4 Prerouting Raw (PBR exclusions)
-
-Packets that hit `accept` in this chain bypass policy-based routing and use the normal routing table. This keeps inter-VLAN and local traffic off the WireGuard tunnel.
-
-| Rule | Exempt traffic                            |
-|------|-------------------------------------------|
-| 1–2  | DMZ ↔ SERVERS inter-VLAN                |
-| 3–4  | Same-subnet traffic within each VLAN      |
-| 5–6  | SERVERS/DMZ → 172.16.0.0/12 (home LAN)   |
-| 7–8  | SERVERS/DMZ → 192.168.0.0/16             |
+All physical interfaces have GRO, GSO, SG, and TSO offload enabled.
 
 ---
 
-## Adding Firewall Rules
+## WireGuard (wg0)
 
-Edit the `lines` list in the relevant task in `vyos.yml`:
+| Parameter          | Value                  |
+|--------------------|------------------------|
+| Local address      | `10.255.255.2/29`      |
+| Listen port        | `51820`                |
+| Peer endpoint      | `51.79.161.145:51830`  |
+| Peer allowed-ips   | `0.0.0.0/0`            |
+| Persistent keepalive | `25s`               |
 
-```yaml
-- "set firewall ipv4 forward filter rule 50 action accept"
-- "set firewall ipv4 forward filter rule 50 description 'My new rule'"
-- "set firewall ipv4 forward filter rule 50 destination address 10.10.200.5/32"
-- "set firewall ipv4 forward filter rule 50 source address 10.10.100.0/29"
-```
+Private key and peer public key are stored in `vyos-vault.yml`.
 
-Then apply with `--tags firewall`.
+---
+
+## DHCP
+
+Single shared network `SERVERS` on `10.10.200.0/24`.
+
+| Parameter      | Value                                    |
+|----------------|------------------------------------------|
+| Subnet         | `10.10.200.0/24`                         |
+| Range          | `10.10.200.101` – `10.10.200.200`        |
+| Default router | `10.10.200.1`                            |
+| Domain name    | `magbanua.xyz`                           |
+| DNS servers    | `1.1.1.1`, `8.8.8.8`, `9.9.9.9`         |
+| Lease time     | `86400s` (24 h)                          |
+
+---
+
+## NTP
+
+Servers: `time1.vyos.net`, `time2.vyos.net`, `time3.vyos.net`
+
+Clients allowed: `127.0.0.0/8`, `169.254.0.0/16`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, and IPv6 loopback/link-local/ULA ranges.
+
+---
+
+## SSH
+
+| Listen address   | Reachable from                    |
+|------------------|-----------------------------------|
+| `10.10.200.1`    | VLAN 200 (SERVERS)                |
+| `172.16.1.182`   | Proxmox host LAN                  |
+| `192.168.8.182`  | Home LAN                          |
 
 ---
 
 ## Static Routes
-
-Current routes in `vars/main.yml`:
 
 | Prefix | Next Hop | Description |
 |---|---|---|
@@ -196,3 +210,4 @@ Then apply with `--tags routes`.
 - `hw-id` (MAC address) fields are intentionally absent — VyOS sets these from hardware and rejects `set` commands that attempt to change them.
 - `save: true` on each task commits and persists the config to startup. Re-running the playbook when config is already in sync results in no changes.
 - The WireGuard private key is written to the router in plaintext (as required by VyOS). Ensure the Ansible control host is trusted and `/opt/infra/secrets/` has appropriate file permissions.
+- `commit-revisions 100` keeps the last 100 config snapshots on the router — roll back with `rollback <n>` from the VyOS CLI.
