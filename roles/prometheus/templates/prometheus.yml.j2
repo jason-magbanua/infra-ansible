@@ -1,0 +1,34 @@
+# Managed by Ansible — do not edit by hand
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - "{{ alertmanager_ip }}:{{ alertmanager_port }}"
+
+rule_files: []
+
+scrape_configs:
+  - job_name: node_exporter
+    static_configs:
+{% for target in node_exporter_targets %}
+      - targets:
+          - "{{ target.ip }}:{{ node_exporter_port }}"
+        labels:
+          instance: "{{ target.host }}"
+{% endfor %}
+
+  - job_name: traefik
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - "{{ traefik_ip }}:{{ traefik_metrics_port }}"
+
+  - job_name: cadvisor
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - "{{ cadvisor_ip }}:{{ cadvisor_port }}"

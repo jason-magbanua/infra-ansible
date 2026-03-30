@@ -1,0 +1,4 @@
+---
+prometheus_user: prometheus
+prometheus_binary_url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+prometheus_archive_dir: "prometheus-{{ prometheus_version }}.linux-amd64"

@@ -26,6 +26,7 @@ ansible/
 │   │   ├── install-wordpress.yml
 │   │   ├── performance-tuning.yml
 │   │   ├── setup-traefik.yml       # Traefik reverse proxy
+│   │   ├── setup-prometheus.yml    # Prometheus monitoring
 │   │   ├── files/
 │   │   └── templates/
 │   └── vyos/                       # VyOS router configuration
@@ -34,12 +35,14 @@ ansible/
 │           ├── main.yml
 │           └── vault.yml
 ├── roles/
-│   └── traefik/                    # Traefik v3 install + config role
+│   ├── traefik/                    # Traefik v3 install + config role
+│   └── prometheus/                 # Prometheus v3 install + config role
 └── docs/
     ├── proxmox-vms.md              # ZFS + LXD VM host setup reference
     ├── proxmox-lxc.md              # LXD container workloads reference
     ├── vyos.md                     # VyOS router automation reference
-    └── traefik.md                  # Traefik reverse proxy reference
+    ├── traefik.md                  # Traefik reverse proxy reference
+    └── prometheus.md               # Prometheus monitoring reference
 ```
 
 ---
@@ -87,6 +90,7 @@ Host groups:
 | LXC workloads   | `LXC/install-wordpress.yml`     | [docs/proxmox-lxc.md](docs/proxmox-lxc.md)     |
 | LXC workloads   | `LXC/performance-tuning.yml`    | [docs/proxmox-lxc.md](docs/proxmox-lxc.md)     |
 | LXC workloads   | `LXC/setup-traefik.yml`         | [docs/traefik.md](docs/traefik.md)             |
+| LXC workloads   | `LXC/setup-prometheus.yml`      | [docs/prometheus.md](docs/prometheus.md)       |
 | VyOS router     | `vyos/vyos.yml`                 | [docs/vyos.md](docs/vyos.md)                   |
 
 ---

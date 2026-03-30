@@ -1,0 +1,74 @@
+---
+- name: Create prometheus system user
+  ansible.builtin.user:
+    name: "{{ prometheus_user }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: /nonexistent
+    create_home: false
+
+- name: Create config and data directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ prometheus_user }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ prometheus_config_path }}", owner: root, mode: "0755" }
+    - { path: "{{ prometheus_storage_path }}", owner: "{{ prometheus_user }}", mode: "0750" }
+
+- name: Download Prometheus archive
+  ansible.builtin.get_url:
+    url: "{{ prometheus_binary_url }}"
+    dest: "/tmp/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+    mode: "0644"
+  register: prometheus_download
+
+- name: Extract prometheus and promtool binaries
+  ansible.builtin.unarchive:
+    src: "/tmp/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+    dest: "{{ prometheus_install_dir }}"
+    remote_src: true
+    include:
+      - "{{ prometheus_archive_dir }}/prometheus"
+      - "{{ prometheus_archive_dir }}/promtool"
+    extra_opts:
+      - "--strip-components=1"
+    owner: root
+    group: root
+    mode: "0755"
+  when: prometheus_download.changed
+  notify: restart prometheus
+
+- name: Template prometheus.yml
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ prometheus_config_path }}/prometheus.yml"
+    owner: root
+    group: "{{ prometheus_user }}"
+    mode: "0640"
+  notify: reload prometheus config
+
+- name: Validate prometheus.yml with promtool
+  ansible.builtin.command:
+    cmd: "{{ prometheus_install_dir }}/promtool check config {{ prometheus_config_path }}/prometheus.yml"
+  changed_when: false
+
+- name: Deploy systemd service unit
+  ansible.builtin.template:
+    src: prometheus.service.j2
+    dest: /etc/systemd/system/prometheus.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - reload systemd
+    - restart prometheus
+
+- name: Enable and start prometheus service
+  ansible.builtin.systemd:
+    name: prometheus
+    enabled: true
+    state: started
+    daemon_reload: true
