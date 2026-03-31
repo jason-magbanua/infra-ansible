@@ -1,0 +1,32 @@
+# Managed by Ansible — do not edit by hand
+[Unit]
+Description=HashiCorp Vault
+Documentation=https://developer.hashicorp.com/vault/docs
+After=network-online.target
+Wants=network-online.target
+ConditionFileNotEmpty={{ vault_config_dir }}/vault.hcl
+
+[Service]
+Type=notify
+User={{ vault_user }}
+Group={{ vault_group }}
+EnvironmentFile={{ vault_config_dir }}/vault.env
+ExecStart={{ vault_install_dir }}/vault server -config={{ vault_config_dir }}/vault.hcl
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+KillSignal=SIGINT
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+LimitNOFILE=65536
+LimitMEMLOCK=infinity
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ vault_data_dir }}
+
+[Install]
+WantedBy=multi-user.target

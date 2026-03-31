@@ -35,7 +35,9 @@ ansible/
 │   │   ├── setup-alloy.yml         # Grafana Alloy agent
 │   │   ├── setup-postgresql.yml    # PostgreSQL (shared DB)
 │   │   ├── setup-redis.yml         # Redis (shared cache)
-│   │   └── setup-authentik.yml     # Authentik SSO (on docker-host)
+│   │   ├── setup-authentik.yml     # Authentik SSO (on docker-host)
+│   │   ├── setup-vault.yml         # HashiCorp Vault install
+│   │   └── setup-vault-config.yml  # Vault config (run after manual init+unseal)
 │   └── vyos/                       # VyOS router configuration
 │       ├── vyos.yml
 │       └── vars/
@@ -51,7 +53,9 @@ ansible/
 │   ├── redis/                      # Redis install + VLAN bind
 │   ├── authentik/                  # Authentik SSO Docker Compose stack
 │   ├── node_exporter/              # Prometheus Node Exporter (all hosts)
-│   └── cadvisor/                   # cAdvisor Docker Compose stack
+│   ├── cadvisor/                   # cAdvisor Docker Compose stack
+│   ├── vault/                      # HashiCorp Vault binary install + Traefik route (10.10.200.40)
+│   └── vault_config/               # Vault engines, dynamic roles, AppRole — run after manual init+unseal
 ├── site.yml                        # Applies common + node_exporter to all hosts
 └── docs/
     ├── proxmox-vms.md              # ZFS + LXD VM host setup reference
@@ -121,6 +125,8 @@ Host groups:
 | LXC workloads   | `LXC/setup-postgresql.yml`      | [docs/authentik.md](docs/authentik.md)         |
 | LXC workloads   | `LXC/setup-redis.yml`           | [docs/authentik.md](docs/authentik.md)         |
 | docker-host     | `LXC/setup-authentik.yml`       | [docs/authentik.md](docs/authentik.md)         |
+| LXC workloads   | `LXC/setup-vault.yml`           | [docs/vault.md](docs/vault.md)                 |
+| LXC workloads   | `LXC/setup-vault-config.yml`    | [docs/vault.md](docs/vault.md)                 |
 | All hosts       | `site.yml`                      | applies `common` + `node_exporter` to all hosts |
 | VyOS router     | `vyos/vyos.yml`                 | [docs/vyos.md](docs/vyos.md)                   |
 
@@ -131,6 +137,8 @@ ansible-playbook playbooks/LXC/setup-traefik.yml --ask-vault-pass
 ansible-playbook playbooks/LXC/setup-grafana.yml --ask-vault-pass
 ansible-playbook playbooks/LXC/setup-postgresql.yml --ask-vault-pass
 ansible-playbook playbooks/LXC/setup-authentik.yml --ask-vault-pass
+ansible-playbook playbooks/LXC/setup-vault.yml --ask-vault-pass
+ansible-playbook playbooks/LXC/setup-vault-config.yml --ask-vault-pass  # after manual init+unseal
 ansible-playbook playbooks/vyos/vyos.yml --ask-vault-pass
 ```
 
@@ -146,3 +154,5 @@ ansible-playbook playbooks/vyos/vyos.yml --ask-vault-pass
 - Grafana vault file at `/opt/infra/secrets/grafana-vault.yml` must be encrypted before committing — contains the Grafana admin password
 - Loki and Alloy have no vault-encrypted secrets in the current homelab configuration
 - Authentik vault file at `/opt/infra/secrets/authentik-vault.yml` must be encrypted before committing — contains the secret key, DB password, and bootstrap credentials. See `secrets/authentik-vault.yml.example`
+- Vault secrets file at `/opt/infra/secrets/vault-vault.yml` must be encrypted before committing — contains the Vault root token (temporary), PostgreSQL credentials for the DB engine, and Authentik static secrets. See `secrets/vault-vault.yml.example`. Rotate the root token to AppRole once `setup-vault-config.yml` has run successfully
+- Vault unseal keys must never be stored in automation — save them only in Vaultwarden and unseal manually after every restart

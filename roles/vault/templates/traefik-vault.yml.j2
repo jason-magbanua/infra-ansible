@@ -1,0 +1,21 @@
+# Managed by Ansible — do not edit by hand
+# Hot-reloaded by Traefik via file provider watch: true
+http:
+  routers:
+    hashicorp-vault:
+      rule: "Host(`{{ vault_hostname }}.{{ traefik_domain }}`)"
+      entryPoints:
+        - websecure
+      service: hashicorp-vault
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: "{{ traefik_domain }}"
+            sans:
+              - "*.{{ traefik_domain }}"
+
+  services:
+    hashicorp-vault:
+      loadBalancer:
+        servers:
+          - url: "http://{{ vault_ip }}:{{ vault_port }}"

@@ -1,0 +1,175 @@
+---
+# Vault API calls use the uri module with root token authentication.
+# Run this role only after manual init + unseal — see docs/vault.md.
+# vault_root_token must be loaded from secrets/vault-vault.yml (Ansible Vault).
+
+# ---------------------------------------------------------------------------
+# Pre-compute Vault template strings.
+# Vault uses {{username}}/{{password}}/{{name}}/{{expiration}} as its own
+# template syntax. These must survive Jinja2 rendering as literal braces.
+# ---------------------------------------------------------------------------
+- name: Set Vault template literals
+  ansible.builtin.set_fact:
+    _pg_conn_url: >-
+      postgresql://{{ '{{' }}username{{ '}}' }}:{{ '{{' }}password{{ '}}' }}@{{ vault_db_host }}:{{ vault_db_port }}/{{ vault_db_name }}?sslmode=disable
+    _pg_creation_stmt: >-
+      CREATE ROLE "{{ '{{' }}name{{ '}}' }}" WITH LOGIN PASSWORD '{{ '{{' }}password{{ '}}' }}'
+      VALID UNTIL '{{ '{{' }}expiration{{ '}}' }}';
+      GRANT CONNECT ON DATABASE {{ vault_db_name }} TO "{{ '{{' }}name{{ '}}' }}";
+
+# ---------------------------------------------------------------------------
+# Secrets engines
+# ---------------------------------------------------------------------------
+- name: Enable KV v2 secrets engine at secret/
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/sys/mounts/secret"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      type: kv
+      options:
+        version: "2"
+    status_code: [200, 204, 400]
+  register: _kv_enable
+  failed_when: >
+    _kv_enable.status not in [200, 204, 400] or
+    (_kv_enable.status == 400 and
+     'path is already in use' not in (_kv_enable.json.errors | default([]) | join('')))
+
+- name: Enable database secrets engine at database/
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/sys/mounts/database"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      type: database
+    status_code: [200, 204, 400]
+  register: _db_enable
+  failed_when: >
+    _db_enable.status not in [200, 204, 400] or
+    (_db_enable.status == 400 and
+     'path is already in use' not in (_db_enable.json.errors | default([]) | join('')))
+
+# ---------------------------------------------------------------------------
+# PostgreSQL database connection
+# ---------------------------------------------------------------------------
+- name: Configure PostgreSQL database connection
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/database/config/postgresql"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      plugin_name: postgresql-database-plugin
+      connection_url: "{{ _pg_conn_url }}"
+      username: "{{ vault_db_user }}"
+      password: "{{ vault_db_pass }}"
+      allowed_roles:
+        - authentik-role
+        - "*"
+    status_code: [200, 204]
+  no_log: true
+
+- name: Create authentik-role dynamic database role
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/database/roles/authentik-role"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      db_name: postgresql
+      creation_statements:
+        - "{{ _pg_creation_stmt }}"
+      default_ttl: "1h"
+      max_ttl: "24h"
+    status_code: [200, 204]
+
+# ---------------------------------------------------------------------------
+# KV secrets
+# ---------------------------------------------------------------------------
+- name: Write Authentik static secrets to secret/authentik/
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/secret/data/authentik"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      data:
+        SECRET_KEY: "{{ vault_authentik_secret_key }}"
+    status_code: [200, 204]
+  no_log: true
+
+# ---------------------------------------------------------------------------
+# AppRole auth
+# ---------------------------------------------------------------------------
+- name: Enable AppRole auth method
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/sys/auth/approle"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      type: approle
+    status_code: [200, 204, 400]
+  register: _approle_enable
+  failed_when: >
+    _approle_enable.status not in [200, 204, 400] or
+    (_approle_enable.status == 400 and
+     'path is already in use' not in (_approle_enable.json.errors | default([]) | join('')))
+
+- name: Create ansible-policy (read on secret/*, database/creds/*)
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/sys/policies/acl/ansible-policy"
+    method: PUT
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      policy: |
+        path "secret/*" {
+          capabilities = ["read", "list"]
+        }
+
+        path "database/creds/*" {
+          capabilities = ["read"]
+        }
+    status_code: [200, 204]
+
+- name: Create ansible-role AppRole
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/auth/approle/role/ansible-role"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      policies:
+        - ansible-policy
+      token_ttl: "1h"
+      token_max_ttl: "24h"
+    status_code: [200, 204]
+
+- name: Retrieve ansible-role role_id
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/auth/approle/role/ansible-role/role-id"
+    method: GET
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    status_code: [200]
+  register: _ansible_role_id
+  no_log: true
+
+- name: Print ansible-role role_id
+  ansible.builtin.debug:
+    msg: >-
+      ansible-role role_id: {{ _ansible_role_id.json.data.role_id }}
+      — store this; generate secret_id at runtime with:
+      vault write -f auth/approle/role/ansible-role/secret-id

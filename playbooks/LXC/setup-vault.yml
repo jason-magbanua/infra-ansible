@@ -1,0 +1,9 @@
+---
+- name: Install and configure HashiCorp Vault
+  hosts: hashicorp-vault
+  become: true
+  gather_facts: true
+  vars_files:
+    - ../../../secrets/vault-vault.yml
+  roles:
+    - vault

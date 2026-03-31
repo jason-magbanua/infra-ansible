@@ -1,0 +1,50 @@
+---
+# Run this playbook ONLY after manual vault operator init + unseal.
+# See ansible/docs/vault.md — "Init and unseal" section.
+#
+# Requires secrets/vault-vault.yml to contain vault_root_token (Ansible Vault encrypted).
+# Usage:
+#   ansible-playbook playbooks/LXC/setup-vault-config.yml --ask-vault-pass
+
+- name: Create PostgreSQL user for Vault database secrets engine
+  hosts: postgresql
+  become: true
+  gather_facts: false
+  vars_files:
+    - ../../../secrets/vault-vault.yml
+  tasks:
+    - name: Create vault PostgreSQL user with CREATEROLE
+      community.postgresql.postgresql_user:
+        name: "{{ vault_db_user }}"
+        password: "{{ vault_db_pass }}"
+        role_attr_flags: CREATEROLE
+        state: present
+      become_user: postgres
+      no_log: true
+
+    - name: Allow vault LXC to connect to PostgreSQL (pg_hba.conf)
+      community.postgresql.postgresql_pg_hba:
+        dest: /etc/postgresql/16/main/pg_hba.conf
+        contype: host
+        users: "{{ vault_db_user }}"
+        source: "10.10.200.40/32"
+        databases: postgres
+        method: scram-sha-256
+        state: present
+      become_user: postgres
+      notify: reload postgresql
+
+  handlers:
+    - name: reload postgresql
+      ansible.builtin.service:
+        name: postgresql
+        state: reloaded
+
+- name: Configure HashiCorp Vault (engines, roles, AppRole)
+  hosts: hashicorp-vault
+  become: false
+  gather_facts: false
+  vars_files:
+    - ../../../secrets/vault-vault.yml
+  roles:
+    - vault_config

@@ -1,0 +1,20 @@
+# Managed by Ansible — do not edit by hand
+
+storage "raft" {
+  path    = "{{ vault_data_dir }}"
+  node_id = "{{ vault_node_id }}"
+}
+
+listener "tcp" {
+  address     = "0.0.0.0:{{ vault_port }}"
+  tls_disable = true
+  # TLS terminated upstream by Traefik
+}
+
+api_addr     = "{{ vault_api_addr }}"
+cluster_addr = "{{ vault_cluster_addr }}"
+
+# Required for unprivileged LXC containers — cannot lock memory pages
+disable_mlock = {{ vault_disable_mlock | lower }}
+
+ui = true
