@@ -2,7 +2,7 @@
 galaxy_info:
   role_name: postgresql
   author: infra
-  description: Install PostgreSQL 16 via APT and provision the authentik database on Ubuntu 24.04
+  description: Install PostgreSQL 16 via APT on Ubuntu 24.04
   min_ansible_version: "2.15"
   platforms:
     - name: Ubuntu

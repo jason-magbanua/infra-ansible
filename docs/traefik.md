@@ -8,9 +8,11 @@ Ansible role that installs and configures Traefik v3 as a native binary (no Dock
 
 ```
 Internet → Traefik LXC (10.10.200.10)
-               ├── vault.magbanua.xyz  →  Vaultwarden  (10.10.200.50:80)
-               ├── wiki.magbanua.xyz   →  Wiki.js       (10.10.200.50:3000)
-               └── traefik.magbanua.xyz → Dashboard    (api@internal)
+               ├── vault.magbanua.xyz    →  Vaultwarden  (10.10.200.41:80)
+               ├── wiki.magbanua.xyz     →  Wiki.js       (10.10.200.43:3000)
+               ├── grafana.magbanua.xyz  →  Grafana       (10.10.200.22:3000)
+               ├── loki.magbanua.xyz     →  Loki          (10.10.200.23:3100)
+               └── traefik.magbanua.xyz  →  Dashboard     (api@internal)
 ```
 
 - Entrypoint `web` (port 80) redirects all traffic to `websecure` (port 443)
@@ -115,8 +117,10 @@ ansible-vault encrypt secrets/traefik-vault.yml
 ├── traefik.env                 # CF_DNS_API_TOKEN (mode 0600)
 ├── acme.json                   # Let's Encrypt cert storage (mode 0600)
 └── conf.d/                     # dynamic config (hot-reloaded)
-    ├── vaultwarden.yml
+    ├── vault.yml               # Vaultwarden
     ├── wikijs.yml
+    ├── grafana.yml
+    ├── loki.yml
     └── dashboard.yml
 /etc/systemd/system/traefik.service
 ```
