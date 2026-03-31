@@ -87,22 +87,6 @@
     group: traefik
     mode: "0640"
 
-- name: Deploy dynamic config — loki
-  ansible.builtin.template:
-    src: conf.d/loki.yml.j2
-    dest: "{{ traefik_config_dir }}/conf.d/loki.yml"
-    owner: traefik
-    group: traefik
-    mode: "0640"
-
-- name: Remove stale dynamic configs (decommissioned services)
-  ansible.builtin.file:
-    path: "{{ traefik_config_dir }}/conf.d/{{ item }}"
-    state: absent
-  loop:
-    - authentik.yml
-    - vaultwarden.yml
-
 - name: Create acme.json with correct permissions
   ansible.builtin.file:
     path: "{{ traefik_acme_file }}"
