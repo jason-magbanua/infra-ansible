@@ -58,7 +58,7 @@
 - name: Deploy dynamic config — vaultwarden
   ansible.builtin.template:
     src: conf.d/vaultwarden.yml.j2
-    dest: "{{ traefik_config_dir }}/conf.d/vaultwarden.yml"
+    dest: "{{ traefik_config_dir }}/conf.d/vault.yml"
     owner: traefik
     group: traefik
     mode: "0640"
