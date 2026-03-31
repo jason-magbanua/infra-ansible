@@ -1,0 +1,35 @@
+---
+- name: Install PostgreSQL and psycopg2
+  ansible.builtin.apt:
+    name:
+      - "postgresql-{{ postgresql_version }}"
+      - python3-psycopg2
+    state: present
+    update_cache: true
+
+- name: Enable and start postgresql service
+  ansible.builtin.systemd:
+    name: postgresql
+    enabled: true
+    state: started
+
+- name: Set listen_addresses in postgresql.conf
+  ansible.builtin.lineinfile:
+    path: "{{ postgresql_config_dir }}/postgresql.conf"
+    regexp: "^#?listen_addresses"
+    line: "listen_addresses = '{{ postgresql_listen_addresses }}'"
+  notify: restart postgresql
+
+- name: Allow authentik connections in pg_hba.conf
+  ansible.builtin.lineinfile:
+    path: "{{ postgresql_config_dir }}/pg_hba.conf"
+    regexp: "^host\\s+{{ authentik_db_name }}\\s+{{ authentik_db_user }}\\s+"
+    line: "host    {{ authentik_db_name }}    {{ authentik_db_user }}    {{ docker_host_ip }}/32    scram-sha-256"
+    insertafter: "^# IPv4 local"
+  notify: restart postgresql
+
+- name: Flush handlers to apply config before creating objects
+  ansible.builtin.meta: flush_handlers
+
+- name: Create authentik database objects
+  ansible.builtin.include_tasks: databases.yml

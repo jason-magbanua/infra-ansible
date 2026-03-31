@@ -1,0 +1,49 @@
+---
+- name: Create Authentik stack directory
+  ansible.builtin.file:
+    path: "{{ authentik_stack_dir }}"
+    state: directory
+    owner: infra
+    group: infra
+    mode: "0750"
+
+- name: Create data subdirectories
+  ansible.builtin.file:
+    path: "{{ authentik_stack_dir }}/{{ item }}"
+    state: directory
+    owner: infra
+    group: infra
+    mode: "0750"
+  loop:
+    - data/media
+    - data/certs
+    - data/custom-templates
+
+- name: Template .env file
+  ansible.builtin.template:
+    src: .env.j2
+    dest: "{{ authentik_stack_dir }}/.env"
+    owner: infra
+    group: infra
+    mode: "0600"
+  notify: restart authentik
+
+- name: Template docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ authentik_stack_dir }}/docker-compose.yml"
+    owner: infra
+    group: infra
+    mode: "0640"
+  notify: restart authentik
+
+- name: Pull Authentik server image
+  community.docker.docker_image:
+    name: "ghcr.io/goauthentik/server:{{ authentik_version }}"
+    source: pull
+    force_source: false
+
+- name: Deploy Authentik stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ authentik_stack_dir }}"
+    state: present

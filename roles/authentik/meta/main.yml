@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: authentik
+  author: infra
+  description: Deploy Authentik SSO as a Docker Compose stack on docker-host
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble
+
+dependencies: []

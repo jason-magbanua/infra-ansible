@@ -1,0 +1,26 @@
+# Managed by Ansible — do not edit by hand
+services:
+
+  server:
+    image: ghcr.io/goauthentik/server:{{ authentik_version }}
+    command: server
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data/media:/media
+      - ./data/custom-templates:/templates
+    ports:
+      - "{{ authentik_ip }}:{{ authentik_port }}:9000"
+      - "{{ authentik_ip }}:9443:9443"
+
+  worker:
+    image: ghcr.io/goauthentik/server:{{ authentik_version }}
+    command: worker
+    restart: unless-stopped
+    env_file: .env
+    user: root
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data/media:/media
+      - ./data/certs:/certs
+      - ./data/custom-templates:/templates

@@ -1,0 +1,15 @@
+---
+# Installs PostgreSQL 16 and provisions the authentik database and user.
+# Requires vault for authentik_db_password.
+#
+# Usage:
+#   ansible-playbook playbooks/LXC/setup-postgresql.yml --ask-vault-pass
+
+- name: Install and configure PostgreSQL
+  hosts: postgresql
+  become: true
+  gather_facts: true
+  vars_files:
+    - "{{ playbook_dir }}/../../../secrets/authentik-vault.yml"
+  roles:
+    - postgresql

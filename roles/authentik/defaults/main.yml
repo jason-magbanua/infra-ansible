@@ -1,0 +1,17 @@
+---
+authentik_version: "2024.12.3"
+authentik_ip: "10.10.200.42"
+authentik_port: 9000
+authentik_stack_dir: "/home/infra/docker/authentik"
+
+postgresql_ip: "10.10.200.30"
+postgresql_port: 5432
+authentik_db_name: "authentik"
+authentik_db_user: "authentik"
+# authentik_db_password must be provided via Ansible Vault
+
+redis_ip: "10.10.200.31"
+redis_port: 6379
+
+# authentik_secret_key must be provided via Ansible Vault
+# Minimum 50 characters. Generate with: openssl rand -base64 60

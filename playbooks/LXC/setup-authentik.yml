@@ -1,0 +1,15 @@
+---
+# Deploys the Authentik SSO Docker Compose stack on docker-host.
+# The secondary IP 10.10.200.42 must already be present — run setup-docker-host.yml first.
+#
+# Usage:
+#   ansible-playbook playbooks/LXC/setup-authentik.yml --ask-vault-pass
+
+- name: Deploy Authentik SSO on docker-host
+  hosts: docker-host
+  become: true
+  gather_facts: true
+  vars_files:
+    - "{{ playbook_dir }}/../../../secrets/authentik-vault.yml"
+  roles:
+    - authentik

@@ -32,7 +32,10 @@ ansible/
 │   │   ├── setup-prometheus.yml    # Prometheus monitoring
 │   │   ├── setup-grafana.yml       # Grafana dashboards
 │   │   ├── setup-loki.yml          # Loki log aggregation
-│   │   └── setup-alloy.yml         # Grafana Alloy agent
+│   │   ├── setup-alloy.yml         # Grafana Alloy agent
+│   │   ├── setup-postgresql.yml    # PostgreSQL (shared DB)
+│   │   ├── setup-redis.yml         # Redis (shared cache)
+│   │   └── setup-authentik.yml     # Authentik SSO (on docker-host)
 │   └── vyos/                       # VyOS router configuration
 │       ├── vyos.yml
 │       └── vars/
@@ -44,6 +47,9 @@ ansible/
 │   ├── grafana/                    # Grafana install + provisioning role
 │   ├── loki/                       # Loki v3 log aggregation role
 │   ├── alloy/                      # Grafana Alloy agent role
+│   ├── postgresql/                 # PostgreSQL 16 install + database provisioning
+│   ├── redis/                      # Redis install + VLAN bind
+│   ├── authentik/                  # Authentik SSO Docker Compose stack
 │   ├── node_exporter/              # Prometheus Node Exporter (all hosts)
 │   └── cadvisor/                   # cAdvisor Docker Compose stack
 ├── site.yml                        # Applies common + node_exporter to all hosts
@@ -54,7 +60,8 @@ ansible/
     ├── traefik.md                  # Traefik reverse proxy reference
     ├── prometheus.md               # Prometheus monitoring reference
     ├── grafana.md                  # Grafana dashboards reference
-    └── loki.md                     # Loki log aggregation + Alloy agent reference
+    ├── loki.md                     # Loki log aggregation + Alloy agent reference
+    └── authentik.md                # Authentik SSO + PostgreSQL + Redis reference
 ```
 
 Vault-encrypted secrets live outside this directory at `/opt/infra/secrets/`.
@@ -65,7 +72,7 @@ Vault-encrypted secrets live outside this directory at `/opt/infra/secrets/`.
 
 - Ansible >= 2.15
 - Python >= 3.10
-- `community.general`, `vyos.vyos`, and `community.docker` collections
+- `community.general`, `vyos.vyos`, `community.docker`, and `community.postgresql` collections
 
 Install dependencies:
 
@@ -111,6 +118,9 @@ Host groups:
 | LXC workloads   | `LXC/setup-grafana.yml`         | [docs/grafana.md](docs/grafana.md)             |
 | LXC workloads   | `LXC/setup-loki.yml`            | [docs/loki.md](docs/loki.md)                   |
 | LXC workloads   | `LXC/setup-alloy.yml`           | [docs/loki.md](docs/loki.md)                   |
+| LXC workloads   | `LXC/setup-postgresql.yml`      | [docs/authentik.md](docs/authentik.md)         |
+| LXC workloads   | `LXC/setup-redis.yml`           | [docs/authentik.md](docs/authentik.md)         |
+| docker-host     | `LXC/setup-authentik.yml`       | [docs/authentik.md](docs/authentik.md)         |
 | All hosts       | `site.yml`                      | applies `common` + `node_exporter` to all hosts |
 | VyOS router     | `vyos/vyos.yml`                 | [docs/vyos.md](docs/vyos.md)                   |
 
@@ -119,6 +129,8 @@ Playbooks that load vault files require `--ask-vault-pass`:
 ```bash
 ansible-playbook playbooks/LXC/setup-traefik.yml --ask-vault-pass
 ansible-playbook playbooks/LXC/setup-grafana.yml --ask-vault-pass
+ansible-playbook playbooks/LXC/setup-postgresql.yml --ask-vault-pass
+ansible-playbook playbooks/LXC/setup-authentik.yml --ask-vault-pass
 ansible-playbook playbooks/vyos/vyos.yml --ask-vault-pass
 ```
 
@@ -133,3 +145,4 @@ ansible-playbook playbooks/vyos/vyos.yml --ask-vault-pass
 - Traefik vault file at `/opt/infra/secrets/traefik-vault.yml` must be encrypted before committing — contains the Cloudflare DNS API token
 - Grafana vault file at `/opt/infra/secrets/grafana-vault.yml` must be encrypted before committing — contains the Grafana admin password
 - Loki and Alloy have no vault-encrypted secrets in the current homelab configuration
+- Authentik vault file at `/opt/infra/secrets/authentik-vault.yml` must be encrypted before committing — contains the secret key, DB password, and bootstrap credentials. See `secrets/authentik-vault.yml.example`

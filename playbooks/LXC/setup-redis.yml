@@ -1,0 +1,13 @@
+---
+# Installs Redis and binds it to the SERVERS VLAN IP (10.10.200.31).
+# No vault required — Redis uses no password in this homelab configuration.
+#
+# Usage:
+#   ansible-playbook playbooks/LXC/setup-redis.yml
+
+- name: Install and configure Redis
+  hosts: redis
+  become: true
+  gather_facts: true
+  roles:
+    - redis

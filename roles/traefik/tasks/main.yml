@@ -95,6 +95,14 @@
     group: traefik
     mode: "0640"
 
+- name: Deploy dynamic config — authentik
+  ansible.builtin.template:
+    src: conf.d/authentik.yml.j2
+    dest: "{{ traefik_config_dir }}/conf.d/authentik.yml"
+    owner: traefik
+    group: traefik
+    mode: "0640"
+
 - name: Create acme.json with correct permissions
   ansible.builtin.file:
     path: "{{ traefik_acme_file }}"
