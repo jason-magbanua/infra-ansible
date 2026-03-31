@@ -69,7 +69,7 @@ Vault-encrypted secrets live outside this directory at `/opt/infra/secrets/`.
 
 - Ansible >= 2.15
 - Python >= 3.10
-- `community.general`, `vyos.vyos`, `community.docker`, and `community.postgresql` collections
+- `community.general`, `vyos.vyos`, and `community.docker` collections
 
 Install dependencies:
 
