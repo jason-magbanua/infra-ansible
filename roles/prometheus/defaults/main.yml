@@ -6,9 +6,6 @@ prometheus_storage_path: "/var/lib/prometheus"
 prometheus_retention: "15d"
 prometheus_port: 9090
 
-alertmanager_ip: "10.10.200.21"
-alertmanager_port: 9093
-
 traefik_ip: "10.10.200.10"
 traefik_metrics_port: 8080
 
@@ -21,14 +18,8 @@ node_exporter_targets:
     ip: "10.10.200.10"
   - host: prometheus
     ip: "10.10.200.20"
-  - host: alertmanager
-    ip: "10.10.200.21"
   - host: grafana
     ip: "10.10.200.22"
-  - host: loki
-    ip: "10.10.200.23"
-  - host: alloy
-    ip: "10.10.200.24"
   - host: apt-cacher-ng
     ip: "10.10.200.4"
   - host: jump-host

@@ -1,7 +1,0 @@
----
-- name: Install and configure Grafana Alloy
-  hosts: alloy
-  become: true
-  gather_facts: true
-  roles:
-    - alloy

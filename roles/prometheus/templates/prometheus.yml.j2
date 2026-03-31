@@ -3,12 +3,6 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
-alerting:
-  alertmanagers:
-    - static_configs:
-        - targets:
-            - "{{ alertmanager_ip }}:{{ alertmanager_port }}"
-
 rule_files: []
 
 scrape_configs:
