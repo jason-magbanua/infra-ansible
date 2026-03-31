@@ -24,9 +24,5 @@ node_exporter_targets:
     ip: "10.10.200.4"
   - host: jump-host
     ip: "10.10.200.3"
-  - host: postgresql
-    ip: "10.10.200.30"
-  - host: redis
-    ip: "10.10.200.31"
   - host: docker-host
     ip: "10.10.200.50"

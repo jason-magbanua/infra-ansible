@@ -31,8 +31,6 @@ ansible/
 │   │   ├── setup-traefik.yml       # Traefik reverse proxy
 │   │   ├── setup-prometheus.yml    # Prometheus monitoring
 │   │   ├── setup-grafana.yml       # Grafana dashboards
-│   │   ├── setup-postgresql.yml    # PostgreSQL
-│   │   └── setup-redis.yml         # Redis (shared cache)
 │   └── vyos/                       # VyOS router configuration
 │       ├── vyos.yml
 │       └── vars/
@@ -42,8 +40,6 @@ ansible/
 │   ├── traefik/                    # Traefik v3 install + config role
 │   ├── prometheus/                 # Prometheus v3 install + config role
 │   ├── grafana/                    # Grafana install + provisioning role
-│   ├── postgresql/                 # PostgreSQL 16 install
-│   ├── redis/                      # Redis install + VLAN bind
 │   ├── node_exporter/              # Prometheus Node Exporter (all hosts)
 │   └── cadvisor/                   # cAdvisor Docker Compose stack
 ├── site.yml                        # Applies common + node_exporter to all hosts
@@ -108,8 +104,6 @@ Host groups:
 | LXC workloads   | `LXC/setup-traefik.yml`         | [docs/traefik.md](docs/traefik.md)             |
 | LXC workloads   | `LXC/setup-prometheus.yml`      | [docs/prometheus.md](docs/prometheus.md)       |
 | LXC workloads   | `LXC/setup-grafana.yml`         | [docs/grafana.md](docs/grafana.md)             |
-| LXC workloads   | `LXC/setup-postgresql.yml`      | —                                              |
-| LXC workloads   | `LXC/setup-redis.yml`           | —                                              |
 | All hosts       | `site.yml`                      | applies `common` + `node_exporter` to all hosts |
 | VyOS router     | `vyos/vyos.yml`                 | [docs/vyos.md](docs/vyos.md)                   |
 

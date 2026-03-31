@@ -1,4 +1,0 @@
----
-postgresql_version: 16
-postgresql_port: 5432
-postgresql_listen_addresses: "127.0.0.1, 10.10.200.30"
