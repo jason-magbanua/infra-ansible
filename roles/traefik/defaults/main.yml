@@ -16,5 +16,3 @@ grafana_port: 3000
 loki_ip: "10.10.200.23"
 loki_port: 3100
 
-authentik_ip: "10.10.200.42"
-authentik_port: 9000
