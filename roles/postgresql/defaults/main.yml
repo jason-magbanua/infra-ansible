@@ -2,11 +2,3 @@
 postgresql_version: 16
 postgresql_port: 5432
 postgresql_listen_addresses: "127.0.0.1, 10.10.200.30"
-
-# Authentik database
-authentik_db_name: authentik
-authentik_db_user: authentik
-# authentik_db_password must be provided via Ansible Vault
-
-# Host allowed to connect remotely
-docker_host_ip: "10.10.200.50"

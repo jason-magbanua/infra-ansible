@@ -1,7 +1,6 @@
 ---
 # Configures docker-host service IP aliases for Docker containers:
 #   - 10.10.200.41  vaultwarden
-#   - 10.10.200.42  authentik
 #
 # Uses a systemd oneshot service to add secondary IPs after the network comes up.
 # Does not touch the primary Netplan config managed by cloud-init.
@@ -16,7 +15,6 @@
   vars:
     docker_service_ips:
       - { ip: "10.10.200.41", prefix: "24" }  # vaultwarden
-      - { ip: "10.10.200.42", prefix: "24" }  # authentik
       - { ip: "10.10.200.43", prefix: "24" }  # wiki.js
 
   tasks:

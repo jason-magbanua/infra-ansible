@@ -1,6 +1,0 @@
----
-# Sensitive vars — must be provided via Ansible Vault (secrets/authentik-vault.yml):
-#   authentik_secret_key      (long random string, 50+ chars)
-#   authentik_db_password     (PostgreSQL user password)
-#   authentik_bootstrap_password  (initial admin password — used only on first run)
-#   authentik_bootstrap_email     (initial admin email)
