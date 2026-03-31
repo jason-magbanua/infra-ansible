@@ -11,7 +11,6 @@ Internet → Traefik LXC (10.10.200.10)
                ├── vault.magbanua.xyz          →  Vaultwarden   (10.10.200.41:80)
                ├── wiki.magbanua.xyz           →  Wiki.js        (10.10.200.43:3000)
                ├── grafana.magbanua.xyz        →  Grafana        (10.10.200.22:3000)
-               ├── loki.magbanua.xyz           →  Loki           (10.10.200.23:3100)
                ├── pve1.magbanua.xyz           →  Proxmox UI     (172.16.1.8:8006)
                ├── jellyfin.magbanua.xyz       →  Jellyfin       (docker-host)
                ├── plex.magbanua.xyz           →  Plex           (docker-host)
@@ -128,7 +127,6 @@ ansible-vault encrypt secrets/traefik-vault.yml
     ├── vault.yml               # Vaultwarden
     ├── wikijs.yml
     ├── grafana.yml
-    ├── loki.yml
     ├── dashboard.yml
     ├── pve1.yml                # Proxmox UI
     ├── jellyfin.yml
