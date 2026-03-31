@@ -1,0 +1,21 @@
+# Managed by Ansible — do not edit by hand
+# Hot-reloaded by Traefik via file provider watch: true
+http:
+  routers:
+    qbittorent:
+      rule: "Host(`qbittorent.{{ traefik_domain }}`)"
+      entryPoints:
+        - websecure
+      service: qbittorent
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: "{{ traefik_domain }}"
+            sans:
+              - "*.{{ traefik_domain }}"
+
+  services:
+    qbittorent:
+      loadBalancer:
+        servers:
+          - url: "http://{{ qbittorent_ip }}:{{ qbittorent_port }}"

@@ -1,0 +1,21 @@
+# Managed by Ansible — do not edit by hand
+# Hot-reloaded by Traefik via file provider watch: true
+http:
+  routers:
+    jellyfin:
+      rule: "Host(`jellyfin.{{ traefik_domain }}`)"
+      entryPoints:
+        - websecure
+      service: jellyfin
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: "{{ traefik_domain }}"
+            sans:
+              - "*.{{ traefik_domain }}"
+
+  services:
+    jellyfin:
+      loadBalancer:
+        servers:
+          - url: "http://{{ jellyfin_ip }}:{{ jellyfin_port }}"

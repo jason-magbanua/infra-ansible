@@ -1,0 +1,21 @@
+# Managed by Ansible — do not edit by hand
+# Hot-reloaded by Traefik via file provider watch: true
+http:
+  routers:
+    sonarr:
+      rule: "Host(`sonarr.{{ traefik_domain }}`)"
+      entryPoints:
+        - websecure
+      service: sonarr
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: "{{ traefik_domain }}"
+            sans:
+              - "*.{{ traefik_domain }}"
+
+  services:
+    sonarr:
+      loadBalancer:
+        servers:
+          - url: "http://{{ sonarr_ip }}:{{ sonarr_port }}"

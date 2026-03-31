@@ -1,0 +1,21 @@
+# Managed by Ansible — do not edit by hand
+# Hot-reloaded by Traefik via file provider watch: true
+http:
+  routers:
+    plex:
+      rule: "Host(`plex.{{ traefik_domain }}`)"
+      entryPoints:
+        - websecure
+      service: plex
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: "{{ traefik_domain }}"
+            sans:
+              - "*.{{ traefik_domain }}"
+
+  services:
+    plex:
+      loadBalancer:
+        servers:
+          - url: "http://{{ plex_ip }}:{{ plex_port }}"

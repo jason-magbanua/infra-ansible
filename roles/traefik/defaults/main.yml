@@ -13,3 +13,27 @@ wikijs_port: 3000
 
 grafana_ip: "10.10.200.22"
 grafana_port: 3000
+
+plex_ip: "172.16.1.50"
+plex_port: 32400
+
+jellyfin_ip: "172.16.1.50"
+jellyfin_port: 8096
+
+flaresolverr_ip: "72.16.1.50"
+flaresolverr_port: 8191
+
+jackett_ip: "172.16.1.50"
+jackett_port: 9117
+
+qbittorent_ip: "172.16.1.50"
+qbittorent_port: 8080
+
+radarr_ip: "172.16.1.50"
+radarr_port: 7878
+
+sonarr_ip: "172.16.1.50"
+sonarr_port: 8989
+
+pve1_ip: "172.16.1.8"
+pve1_port: 8006

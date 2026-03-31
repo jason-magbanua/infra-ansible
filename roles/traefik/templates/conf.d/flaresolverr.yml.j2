@@ -1,0 +1,21 @@
+# Managed by Ansible — do not edit by hand
+# Hot-reloaded by Traefik via file provider watch: true
+http:
+  routers:
+    flaresolverr:
+      rule: "Host(`flaresolverr.{{ traefik_domain }}`)"
+      entryPoints:
+        - websecure
+      service: flaresolverr
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: "{{ traefik_domain }}"
+            sans:
+              - "*.{{ traefik_domain }}"
+
+  services:
+    flaresolverr:
+      loadBalancer:
+        servers:
+          - url: "http://{{ flaresolverr_ip }}:{{ flaresolverr_port }}"

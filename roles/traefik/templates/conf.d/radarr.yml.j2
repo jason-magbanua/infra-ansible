@@ -1,0 +1,21 @@
+# Managed by Ansible — do not edit by hand
+# Hot-reloaded by Traefik via file provider watch: true
+http:
+  routers:
+    radarr:
+      rule: "Host(`radarr.{{ traefik_domain }}`)"
+      entryPoints:
+        - websecure
+      service: radarr
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: "{{ traefik_domain }}"
+            sans:
+              - "*.{{ traefik_domain }}"
+
+  services:
+    radarr:
+      loadBalancer:
+        servers:
+          - url: "http://{{ radarr_ip }}:{{ radarr_port }}"

@@ -1,0 +1,21 @@
+# Managed by Ansible — do not edit by hand
+# Hot-reloaded by Traefik via file provider watch: true
+http:
+  routers:
+    jackett:
+      rule: "Host(`jackett.{{ traefik_domain }}`)"
+      entryPoints:
+        - websecure
+      service: jackett
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: "{{ traefik_domain }}"
+            sans:
+              - "*.{{ traefik_domain }}"
+
+  services:
+    jackett:
+      loadBalancer:
+        servers:
+          - url: "http://{{ jackett_ip }}:{{ jackett_port }}"

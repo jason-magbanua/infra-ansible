@@ -87,6 +87,70 @@
     group: traefik
     mode: "0640"
 
+- name: Deploy dynamic config — flaresolverr
+  ansible.builtin.template:
+    src: conf.d/flaresolverr.yml.j2
+    dest: "{{ traefik_config_dir }}/conf.d/flaresolverr.yml"
+    owner: traefik
+    group: traefik
+    mode: "0640"
+
+- name: Deploy dynamic config — jackett
+  ansible.builtin.template:
+    src: conf.d/jackett.yml.j2
+    dest: "{{ traefik_config_dir }}/conf.d/jackett.yml"
+    owner: traefik
+    group: traefik
+    mode: "0640"
+
+- name: Deploy dynamic config — jellyfin
+  ansible.builtin.template:
+    src: conf.d/jellyfin.yml.j2
+    dest: "{{ traefik_config_dir }}/conf.d/jellyfin.yml"
+    owner: traefik
+    group: traefik
+    mode: "0640"
+
+- name: Deploy dynamic config — plex
+  ansible.builtin.template:
+    src: conf.d/plex.yml.j2
+    dest: "{{ traefik_config_dir }}/conf.d/plex.yml"
+    owner: traefik
+    group: traefik
+    mode: "0640"
+
+- name: Deploy dynamic config — pve1
+  ansible.builtin.template:
+    src: conf.d/pve1.yml.j2
+    dest: "{{ traefik_config_dir }}/conf.d/pve1.yml"
+    owner: traefik
+    group: traefik
+    mode: "0640"
+
+- name: Deploy dynamic config — qbittorrent
+  ansible.builtin.template:
+    src: conf.d/qbittorent.yml.j2
+    dest: "{{ traefik_config_dir }}/conf.d/qbittorent.yml"
+    owner: traefik
+    group: traefik
+    mode: "0640"
+
+- name: Deploy dynamic config — radarr
+  ansible.builtin.template:
+    src: conf.d/radarr.yml.j2
+    dest: "{{ traefik_config_dir }}/conf.d/radarr.yml"
+    owner: traefik
+    group: traefik
+    mode: "0640"
+
+- name: Deploy dynamic config — sonarr
+  ansible.builtin.template:
+    src: conf.d/sonarr.yml.j2
+    dest: "{{ traefik_config_dir }}/conf.d/sonarr.yml"
+    owner: traefik
+    group: traefik
+    mode: "0640"
+
 - name: Create acme.json with correct permissions
   ansible.builtin.file:
     path: "{{ traefik_acme_file }}"

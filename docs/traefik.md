@@ -8,11 +8,19 @@ Ansible role that installs and configures Traefik v3 as a native binary (no Dock
 
 ```
 Internet → Traefik LXC (10.10.200.10)
-               ├── vault.magbanua.xyz    →  Vaultwarden  (10.10.200.41:80)
-               ├── wiki.magbanua.xyz     →  Wiki.js       (10.10.200.43:3000)
-               ├── grafana.magbanua.xyz  →  Grafana       (10.10.200.22:3000)
-               ├── loki.magbanua.xyz     →  Loki          (10.10.200.23:3100)
-               └── traefik.magbanua.xyz  →  Dashboard     (api@internal)
+               ├── vault.magbanua.xyz          →  Vaultwarden   (10.10.200.41:80)
+               ├── wiki.magbanua.xyz           →  Wiki.js        (10.10.200.43:3000)
+               ├── grafana.magbanua.xyz        →  Grafana        (10.10.200.22:3000)
+               ├── loki.magbanua.xyz           →  Loki           (10.10.200.23:3100)
+               ├── pve1.magbanua.xyz           →  Proxmox UI     (172.16.1.8:8006)
+               ├── jellyfin.magbanua.xyz       →  Jellyfin       (docker-host)
+               ├── plex.magbanua.xyz           →  Plex           (docker-host)
+               ├── jackett.magbanua.xyz        →  Jackett        (docker-host)
+               ├── sonarr.magbanua.xyz         →  Sonarr         (docker-host)
+               ├── radarr.magbanua.xyz         →  Radarr         (docker-host)
+               ├── qbittorrent.magbanua.xyz    →  qBittorrent    (docker-host)
+               ├── flaresolverr.magbanua.xyz   →  FlareSolverr   (docker-host)
+               └── traefik.magbanua.xyz        →  Dashboard      (api@internal)
 ```
 
 - Entrypoint `web` (port 80) redirects all traffic to `websecure` (port 443)
@@ -121,7 +129,15 @@ ansible-vault encrypt secrets/traefik-vault.yml
     ├── wikijs.yml
     ├── grafana.yml
     ├── loki.yml
-    └── dashboard.yml
+    ├── dashboard.yml
+    ├── pve1.yml                # Proxmox UI
+    ├── jellyfin.yml
+    ├── plex.yml
+    ├── jackett.yml
+    ├── sonarr.yml
+    ├── radarr.yml
+    ├── qbittorent.yml
+    └── flaresolverr.yml
 /etc/systemd/system/traefik.service
 ```
 

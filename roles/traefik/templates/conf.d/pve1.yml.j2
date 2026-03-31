@@ -1,0 +1,26 @@
+# Managed by Ansible — do not edit by hand
+# Hot-reloaded by Traefik via file provider watch: true
+http:
+  routers:
+    pve1:
+      rule: "Host(`pve1.{{ traefik_domain }}`)"
+      entryPoints:
+        - websecure
+      service: pve1
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: "{{ traefik_domain }}"
+            sans:
+              - "*.{{ traefik_domain }}"
+
+  services:
+    pve1:
+      loadBalancer:
+        serversTransport: pve1-transport
+        servers:
+          - url: "https://{{ pve1_ip }}:{{ pve1_port }}"
+
+  serversTransports:
+    pve1-transport:
+      insecureSkipVerify: true
