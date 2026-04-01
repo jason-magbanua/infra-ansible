@@ -8,16 +8,6 @@
     upgrade: full
     update_cache: true
 
-- name: Check if reboot is required
-  ansible.builtin.stat:
-    path: /var/run/reboot-required
-  register: reboot_required
-
-- name: Reboot if kernel or packages require it
-  ansible.builtin.reboot:
-    reboot_timeout: 300
-  when: reboot_required.stat.exists
-
 ############################################################
 # Prerequisites
 ############################################################
