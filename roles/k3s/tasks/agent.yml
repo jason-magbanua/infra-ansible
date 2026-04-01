@@ -24,3 +24,19 @@
     enabled: true
     state: started
     daemon_reload: true
+
+- name: Wait for node to register with API server
+  ansible.builtin.command:
+    cmd: kubectl get node {{ inventory_hostname }}
+  delegate_to: k3s-control
+  register: node_registered
+  until: node_registered.rc == 0
+  retries: 12
+  delay: 10
+  changed_when: false
+
+- name: Label worker node
+  ansible.builtin.command:
+    cmd: kubectl label node {{ inventory_hostname }} node-role.kubernetes.io/worker=true --overwrite
+  delegate_to: k3s-control
+  changed_when: false

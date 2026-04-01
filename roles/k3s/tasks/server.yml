@@ -17,3 +17,8 @@
   ansible.builtin.wait_for:
     path: /var/lib/rancher/k3s/server/node-token
     timeout: 60
+
+- name: Label control-plane node
+  ansible.builtin.command:
+    cmd: kubectl label node {{ inventory_hostname }} node-role.kubernetes.io/control-plane=true --overwrite
+  changed_when: false

@@ -34,7 +34,7 @@ The `_netdev` option defers mount until networking is up. `nofail` prevents boot
 
 | Variable         | Default              | Description                  |
 |------------------|----------------------|------------------------------|
-| `k3s_version`    | `v1.32.3+k3s1`       | k3s release to install       |
+| `k3s_version`    | `v1.34.6+k3s1`       | k3s release to install       |
 | `k3s_role`       | `agent`              | `server` or `agent`          |
 | `k3s_server_ip`  | `10.10.200.60`       | Control plane IP             |
 | `k3s_server_port`| `6443`               | API server port              |
