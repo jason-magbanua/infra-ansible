@@ -10,3 +10,7 @@ collections/ansible_collections/
 # Python virtualenv
 venv/
 .venv/
+
+# Claude
+CLAUDE.md
+.claude/
