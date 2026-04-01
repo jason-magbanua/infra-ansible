@@ -111,12 +111,12 @@ Host groups:
 | All hosts       | `site.yml`                      | applies `common` + `node_exporter` to all hosts |
 | VyOS router     | `vyos/vyos.yml`                 | [docs/vyos.md](docs/vyos.md)                   |
 
-Playbooks that load vault files require `--ask-vault-pass`:
+Playbooks that load secrets files:
 
 ```bash
-ansible-playbook playbooks/LXC/setup-traefik.yml --ask-vault-pass
-ansible-playbook playbooks/LXC/setup-grafana.yml --ask-vault-pass
-ansible-playbook playbooks/vyos/vyos.yml --ask-vault-pass
+ansible-playbook playbooks/LXC/setup-traefik.yml
+ansible-playbook playbooks/LXC/setup-grafana.yml
+ansible-playbook playbooks/vyos/vyos.yml
 ```
 
 ---

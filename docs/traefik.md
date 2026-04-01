@@ -32,7 +32,7 @@ Internet → Traefik LXC (10.10.200.10)
 
 ```bash
 cd ansible/
-ansible-playbook playbooks/LXC/setup-traefik.yml --ask-vault-pass
+ansible-playbook playbooks/LXC/setup-traefik.yml
 ```
 
 The playbook targets the `traefik` inventory group and loads `secrets/traefik-vault.yml` automatically.

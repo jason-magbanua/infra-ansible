@@ -18,7 +18,7 @@ Internet → Traefik (10.10.200.10)
 
 ```bash
 cd ansible/
-ansible-playbook playbooks/LXC/setup-grafana.yml --ask-vault-pass
+ansible-playbook playbooks/LXC/setup-grafana.yml
 ```
 
 The playbook targets the `grafana` inventory group and loads `secrets/grafana-vault.yml` automatically.
@@ -167,7 +167,7 @@ A conf.d entry was added to the Traefik role at `roles/traefik/templates/conf.d/
 Re-run the Traefik playbook to pick up the route if Traefik was already deployed before Grafana:
 
 ```bash
-ansible-playbook playbooks/LXC/setup-traefik.yml --ask-vault-pass
+ansible-playbook playbooks/LXC/setup-traefik.yml
 ```
 
 ---
