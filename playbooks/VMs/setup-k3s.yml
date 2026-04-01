@@ -1,0 +1,28 @@
+---
+# Installs k3s on the control plane and worker nodes.
+#
+#   k3s-control  10.10.200.60  — server (control plane)
+#   k3s-worker1  10.10.200.61  — agent
+#   k3s-worker2  10.10.200.62  — agent
+#
+# Usage:
+#   ansible-playbook playbooks/VMs/setup-k3s.yml
+#
+# Control-only first run (workers need the server token):
+#   ansible-playbook playbooks/VMs/setup-k3s.yml --limit k3s-control
+
+- name: k3s control plane
+  hosts: k3s-control
+  become: true
+  roles:
+    - role: k3s
+      vars:
+        k3s_role: server
+
+- name: k3s worker nodes
+  hosts: "k3s-worker*"
+  become: true
+  roles:
+    - role: k3s
+      vars:
+        k3s_role: agent

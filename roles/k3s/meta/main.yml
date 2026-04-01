@@ -1,0 +1,6 @@
+---
+galaxy_info:
+  role_name: k3s
+  description: k3s Kubernetes distribution install (server + agent)
+  min_ansible_version: "2.15"
+dependencies: []

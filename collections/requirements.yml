@@ -2,3 +2,4 @@ collections:
   - name: community.general
   - name: vyos.vyos
   - name: community.docker
+  - name: ansible.posix

@@ -1,0 +1,8 @@
+---
+k3s_version: "v1.32.3+k3s1"
+k3s_role: agent          # server | agent
+k3s_server_ip: "10.10.200.60"
+k3s_server_port: 6443
+k3s_nfs_server: "172.16.1.8"
+k3s_nfs_export: "/mnt/ssd_1T/k3s-data"
+k3s_nfs_mount: "/mnt/k3s-data"
