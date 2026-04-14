@@ -1,0 +1,3 @@
+---
+# Tasks specific to the k8s control plane node.
+# Common node setup (swap, containerd, kubeadm/kubelet/kubectl) is handled by the k8s_common role.

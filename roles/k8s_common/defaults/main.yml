@@ -1,1 +1,3 @@
 ---
+containerd_version: "2.1.4"
+containerd_arch: "amd64"

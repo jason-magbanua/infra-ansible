@@ -4,8 +4,14 @@
 # Usage:
 #   ansible-playbook playbooks/k8s_lab/setup-k8s-lab.yml -i inventory/lab/hosts_k8s_lab
 
-- name: Bootstrap k8s lab nodes
+- name: Bootstrap all k8s lab nodes
   hosts: hosts_k8s_lab
   become: true
   roles:
     - k8s_common
+
+- name: Configure k8s control plane node
+  hosts: k8s_control_plane
+  become: true
+  roles:
+    - k8s_control

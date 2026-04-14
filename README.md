@@ -46,7 +46,8 @@ ansible/
 │   ├── node_exporter/              # Prometheus Node Exporter (all hosts)
 │   ├── cadvisor/                   # cAdvisor Docker Compose stack
 │   ├── k3s/                        # k3s server + agent install, NFS data mount
-│   └── k8s_common/                 # Baseline for external k8s lab nodes (/etc/hosts)
+│   ├── k8s_common/                 # All k8s lab nodes: /etc/hosts, swap, containerd, kubeadm/kubelet/kubectl
+│   └── k8s_control/                # Control plane only (kubeadm init and beyond)
 ├── site.yml                        # Applies common + node_exporter to all hosts
 └── docs/
     ├── proxmox-vms.md              # ZFS + LXD VM host setup reference
