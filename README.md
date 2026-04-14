@@ -108,7 +108,7 @@ Host groups:
 | LXC workloads   | `LXC/setup-traefik.yml`         | [docs/traefik.md](docs/traefik.md)             |
 | LXC workloads   | `LXC/setup-prometheus.yml`      | [docs/prometheus.md](docs/prometheus.md)       |
 | LXC workloads   | `LXC/setup-grafana.yml`         | [docs/grafana.md](docs/grafana.md)             |
-| All hosts       | `site.yml`                      | applies `common` + `node_exporter` to all hosts |
+| All hosts       | `site.yml`                      | applies `common` to all hosts; `node_exporter` to all except `hosts_k8s_lab` |
 | VyOS router     | `vyos/vyos.yml`                 | [docs/vyos.md](docs/vyos.md)                   |
 
 Playbooks that load secrets files:

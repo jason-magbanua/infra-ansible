@@ -9,4 +9,5 @@
   gather_facts: true
   roles:
     - common
-    - node_exporter
+    - role: node_exporter
+      when: inventory_hostname not in groups['hosts_k8s_lab'] | default([])
