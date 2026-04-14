@@ -134,3 +134,55 @@
     - kubelet
     - kubeadm
     - kubectl
+
+# Step 4: Configure Ephemeral Port Range
+- name: Configure ephemeral port range for k8s NodePorts
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_local_port_range
+    value: "49152 65535"
+    sysctl_file: /etc/sysctl.d/99-nodeport.conf
+    state: present
+    reload: true
+
+# Step 5: Create Kubelet Configuration Patch
+- name: Create /etc/kubernetes/patches directory
+  ansible.builtin.file:
+    path: /etc/kubernetes/patches
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Write kubelet configuration patch
+  ansible.builtin.copy:
+    dest: /etc/kubernetes/patches/kubeletconfiguration0+strategic.yaml
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      apiVersion: kubelet.config.k8s.io/v1beta1
+      kind: KubeletConfiguration
+
+      shutdownGracePeriod: 60s
+      shutdownGracePeriodCriticalPods: 30s
+
+      # Reserve resources for Kubernetes components (kubelet, containerd, CNI)
+      kubeReserved:
+        cpu: "200m"
+        memory: "256Mi"
+        ephemeral-storage: "1Gi"
+
+      # Reserve resources for OS + agents (systemd, SSH, monitoring)
+      systemReserved:
+        cpu: "100m"
+        memory: "256Mi"
+        ephemeral-storage: "1Gi"
+
+      # Eviction thresholds: graceful shutdown before kernel OOM
+      evictionHard:
+        memory.available: "100Mi"
+        nodefs.available: "10%"
+        imagefs.available: "15%"
+        nodefs.inodesFree: "5%"
+
+      evictionPressureTransitionPeriod: "5m0s"

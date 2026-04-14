@@ -45,6 +45,8 @@ Applied to all k8s lab nodes (control plane and workers):
 - Installs `runc` via apt
 - Adds the Kubernetes apt repository (`pkgs.k8s.io`, stable v1.34)
 - Installs and holds `kubelet`, `kubeadm`, and `kubectl`
+- Writes `/etc/sysctl.d/99-nodeport.conf` and sets `net.ipv4.ip_local_port_range = 49152 65535` (frees ports below 49152 for k8s NodePorts)
+- Creates `/etc/kubernetes/patches/` and writes `kubeletconfiguration0+strategic.yaml` — a kubeadm patch that sets shutdown grace periods, `kubeReserved`/`systemReserved` CPU+memory+ephemeral-storage, and hard eviction thresholds
 
 Defaults: `containerd_version: "2.1.4"`, `containerd_arch: "amd64"`.
 
