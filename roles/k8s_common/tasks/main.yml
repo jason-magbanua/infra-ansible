@@ -1,0 +1,12 @@
+---
+# Common baseline tasks for all k8s lab nodes.
+
+- name: Add k8s lab hosts to /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "{{ item }}"
+    state: present
+  loop:
+    - "109.61.95.136  jm-k8s-control"
+    - "109.61.95.137  jm-k8s-lin-worker1"
+    - "109.61.95.138  jm-k8s-lin-worker2"

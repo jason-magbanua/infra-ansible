@@ -32,6 +32,8 @@ ansible/
 │   │   ├── setup-traefik.yml       # Traefik reverse proxy
 │   │   ├── setup-prometheus.yml    # Prometheus monitoring
 │   │   ├── setup-grafana.yml       # Grafana dashboards
+│   ├── k8s_lab/                    # External k8s lab nodes
+│   │   └── setup-k8s-lab.yml       # Bootstrap all k8s lab nodes
 │   └── vyos/                       # VyOS router configuration
 │       ├── vyos.yml
 │       └── vars/
@@ -43,7 +45,8 @@ ansible/
 │   ├── grafana/                    # Grafana install + provisioning role
 │   ├── node_exporter/              # Prometheus Node Exporter (all hosts)
 │   ├── cadvisor/                   # cAdvisor Docker Compose stack
-│   └── k3s/                        # k3s server + agent install, NFS data mount
+│   ├── k3s/                        # k3s server + agent install, NFS data mount
+│   └── k8s_common/                 # Baseline for external k8s lab nodes (/etc/hosts)
 ├── site.yml                        # Applies common + node_exporter to all hosts
 └── docs/
     ├── proxmox-vms.md              # ZFS + LXD VM host setup reference
@@ -52,7 +55,8 @@ ansible/
     ├── traefik.md                  # Traefik reverse proxy reference
     ├── prometheus.md               # Prometheus monitoring reference
     ├── k3s.md                      # k3s cluster reference
-    └── grafana.md                  # Grafana dashboards reference
+    ├── grafana.md                  # Grafana dashboards reference
+    └── k8s-lab.md                  # External k8s lab reference
 ```
 
 Vault-encrypted secrets live outside this directory at `/opt/infra/secrets/`.
@@ -109,6 +113,7 @@ Host groups:
 | LXC workloads   | `LXC/setup-prometheus.yml`      | [docs/prometheus.md](docs/prometheus.md)       |
 | LXC workloads   | `LXC/setup-grafana.yml`         | [docs/grafana.md](docs/grafana.md)             |
 | All hosts       | `site.yml`                      | applies `common` to all hosts; `node_exporter` to all except `hosts_k8s_lab` |
+| k8s lab         | `k8s_lab/setup-k8s-lab.yml`     | [docs/k8s-lab.md](docs/k8s-lab.md)             |
 | VyOS router     | `vyos/vyos.yml`                 | [docs/vyos.md](docs/vyos.md)                   |
 
 Playbooks that load secrets files:
