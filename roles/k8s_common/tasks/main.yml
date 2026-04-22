@@ -1,6 +1,14 @@
 ---
 # Common baseline tasks for all k8s lab nodes.
 
+- name: Set bash history timestamp format
+  ansible.builtin.copy:
+    dest: /etc/profile.d/bash_history_timestamp.sh
+    content: "export HISTTIMEFORMAT=\"%F %T \"\n"
+    owner: root
+    group: root
+    mode: "0644"
+
 - name: Add k8s lab hosts to /etc/hosts
   ansible.builtin.lineinfile:
     path: /etc/hosts
