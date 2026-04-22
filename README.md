@@ -39,7 +39,7 @@ ansible/
 │       └── vars/
 │           └── main.yml
 ├── roles/
-│   ├── common/                     # Baseline packages applied to all hosts
+│   ├── common/                     # Baseline packages + bash history timestamps applied to all hosts
 │   ├── traefik/                    # Traefik v3 install + config role
 │   ├── prometheus/                 # Prometheus v3 install + config role
 │   ├── grafana/                    # Grafana install + provisioning role

@@ -36,3 +36,11 @@
     state: present
     update_cache: true
     cache_valid_time: 3600
+
+- name: Set bash history timestamp format
+  ansible.builtin.copy:
+    dest: /etc/profile.d/bash_history_timestamp.sh
+    content: "export HISTTIMEFORMAT=\"%F %T \"\n"
+    owner: root
+    group: root
+    mode: "0644"
