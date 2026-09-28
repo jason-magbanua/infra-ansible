@@ -3,16 +3,16 @@
 http:
   routers:
     vaultwarden:
-      rule: "Host(`vault.{{ traefik_domain }}`)"
+      rule: "Host(`{{ vaultwarden_host }}`)"
       entryPoints:
         - websecure
       service: vaultwarden
       tls:
         certResolver: cloudflare
         domains:
-          - main: "{{ traefik_domain }}"
+          - main: "{{ vaultwarden_cert_domain }}"
             sans:
-              - "*.{{ traefik_domain }}"
+              - "*.{{ vaultwarden_cert_domain }}"
       middlewares:
         - secHeaders
 

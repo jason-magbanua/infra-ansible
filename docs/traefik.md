@@ -8,10 +8,10 @@ Ansible role that installs and configures Traefik v3 as a native binary (no Dock
 
 ```
 Internet → Traefik LXC (10.10.200.10)
-               ├── vault.magbanua.xyz          →  Vaultwarden   (10.10.200.41:80)
+               ├── vault-backup.magbanua.org   →  Vaultwarden standby (172.16.200.41:80)
                ├── wiki.magbanua.xyz           →  Wiki.js        (10.10.200.43:3000)
                ├── grafana.magbanua.xyz        →  Grafana        (10.10.200.22:3000)
-               ├── pve1.magbanua.xyz           →  Proxmox UI     (172.16.1.8:8006)
+               ├── pve1.magbanua.xyz           →  Proxmox UI     (172.16.200.8:8006)
                ├── jellyfin.magbanua.xyz       →  Jellyfin       (docker-host)
                ├── plex.magbanua.xyz           →  Plex           (docker-host)
                ├── jackett.magbanua.xyz        →  Jackett        (docker-host)
@@ -90,7 +90,9 @@ ansible-vault encrypt secrets/traefik-vault.yml
 | `traefik_version`      | `v3.7.0-ea.3`                  | Traefik release tag (must include `v`)   |
 | `traefik_domain`       | `example.com`                  | Base domain for all virtual hosts        |
 | `traefik_acme_email`   | `you@example.com`              | Email address for Let's Encrypt account  |
-| `vaultwarden_ip`       | `10.10.200.50`                 | Vaultwarden backend IP                   |
+| `vaultwarden_host`     | `vault-backup.magbanua.org`    | Vaultwarden standby hostname             |
+| `vaultwarden_cert_domain` | `magbanua.org`              | Wildcard cert domain for that route      |
+| `vaultwarden_ip`       | `172.16.200.41`                | Vaultwarden backend IP                   |
 | `vaultwarden_port`     | `80`                           | Vaultwarden backend port                 |
 | `wikijs_ip`            | `10.10.200.50`                 | Wiki.js backend IP                       |
 | `wikijs_port`          | `3000`                         | Wiki.js backend port                     |
