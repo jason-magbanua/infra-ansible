@@ -7,3 +7,6 @@ node_exporter_web_listen: "0.0.0.0:9100"
 # Restricts access to the server subnet only (10.10.200.0/24)
 node_exporter_configure_ufw: false
 node_exporter_ufw_source: "10.10.200.0/24"
+
+# Directory for the textfile collector (empty = disabled)
+node_exporter_textfile_dir: ""

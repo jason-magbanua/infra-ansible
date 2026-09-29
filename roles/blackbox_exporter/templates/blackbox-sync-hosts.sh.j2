@@ -1,0 +1,10 @@
+#!/bin/bash
+# Managed by Ansible — do not edit by hand
+# Pull the domain -> cp3 mapping published by cp3 and write it in place
+# (in place, so the bind mount of the file in blackbox_exporter_internal stays valid).
+set -eu
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
+curl -fsS --max-time 10 "{{ blackbox_exporter_hosts_url }}" -o "$tmp"
+grep -q '^[0-9]' "$tmp"
+{ printf '127.0.0.1 localhost\n::1 localhost\n'; cat "$tmp"; } > {{ blackbox_exporter_config_dir }}/internal-hosts

@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+# Managed by Ansible — do not edit by hand
+# Writes PM2 process metrics for every user with a running PM2 daemon into the
+# node_exporter textfile collector directory.
+import json, os, pwd, subprocess, sys, time
+
+OUT = sys.argv[1]
+lines = [
+    "# TYPE pm2_process_up gauge",
+    "# TYPE pm2_process_restarts gauge",
+    "# TYPE pm2_process_uptime_seconds gauge",
+    "# TYPE pm2_process_memory_bytes gauge",
+    "# TYPE pm2_process_cpu_percent gauge",
+]
+now = time.time()
+for entry in pwd.getpwall():
+    pm2_home = os.path.join(entry.pw_dir, ".pm2")
+    pidfile = os.path.join(pm2_home, "pm2.pid")
+    if not os.path.isfile(pidfile):
+        continue
+    try:
+        os.kill(int(open(pidfile).read().strip()), 0)  # daemon alive? never spawn one
+    except (ValueError, OSError):
+        continue
+    out = subprocess.run(
+        ["runuser", "-u", entry.pw_name, "--", "env", f"PM2_HOME={pm2_home}", "pm2", "jlist"],
+        capture_output=True, text=True, timeout=30).stdout
+    start = out.find("[")
+    if start < 0:
+        continue
+    for p in json.loads(out[start:]):
+        env = p["pm2_env"]
+        lbl = f'user="{entry.pw_name}",name="{p["name"]}",pm_id="{p["pm_id"]}"'
+        up = 1 if env.get("status") == "online" else 0
+        uptime = max(0, now - env["pm_uptime"] / 1000) if up else 0
+        lines += [
+            f"pm2_process_up{{{lbl}}} {up}",
+            f"pm2_process_restarts{{{lbl}}} {env.get('restart_time', 0)}",
+            f"pm2_process_uptime_seconds{{{lbl}}} {uptime:.0f}",
+            f"pm2_process_memory_bytes{{{lbl}}} {p['monit']['memory']}",
+            f"pm2_process_cpu_percent{{{lbl}}} {p['monit']['cpu']}",
+        ]
+lines += ["# TYPE pm2_textfile_last_run_timestamp_seconds gauge",
+          f"pm2_textfile_last_run_timestamp_seconds {now:.0f}"]
+tmp = os.path.join(OUT, ".pm2.prom.tmp")
+with open(tmp, "w") as f:
+    f.write("\n".join(lines) + "\n")
+os.replace(tmp, os.path.join(OUT, "pm2.prom"))

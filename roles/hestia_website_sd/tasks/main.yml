@@ -1,0 +1,70 @@
+---
+- name: Create service-discovery and textfile directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ hestia_sd_dir }}"
+    - "{{ node_exporter_textfile_dir }}"
+
+- name: Install the discovery and PM2 scripts
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - hestia-website-sd
+    - pm2-textfile
+
+- name: Schedule the scripts
+  ansible.builtin.copy:
+    dest: /etc/cron.d/hestia-website-monitoring
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible
+      PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      */5 * * * * root /usr/local/bin/hestia-website-sd {{ hestia_sd_dir }} {{ hestia_sd_origin_ip }}
+      * * * * * root /usr/local/bin/pm2-textfile {{ node_exporter_textfile_dir }}
+
+- name: Generate the target list now
+  ansible.builtin.command: /usr/local/bin/hestia-website-sd {{ hestia_sd_dir }} {{ hestia_sd_origin_ip }}
+  changed_when: false
+
+- name: Generate the PM2 metrics now
+  ansible.builtin.command: /usr/local/bin/pm2-textfile {{ node_exporter_textfile_dir }}
+  changed_when: false
+
+- name: Deploy the discovery HTTP unit
+  ansible.builtin.template:
+    src: hestia-sd-http.service.j2
+    dest: /etc/systemd/system/hestia-sd-http.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - reload systemd
+    - restart hestia-sd-http
+
+- name: Enable and start the discovery HTTP unit
+  ansible.builtin.systemd:
+    name: hestia-sd-http
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Check for existing discovery firewall rule
+  ansible.builtin.shell: grep -q "COMMENT=.PROMETHEUS-SD." /usr/local/hestia/data/firewall/rules.conf
+  register: hestia_sd_rule
+  changed_when: false
+  failed_when: false
+
+- name: Allow Prometheus to fetch the target list through the Hestia firewall
+  ansible.builtin.command: /usr/local/hestia/bin/v-add-firewall-rule ACCEPT {{ hestia_sd_prometheus_source }} {{ hestia_sd_port }} TCP PROMETHEUS-SD
+  when: hestia_sd_rule.rc != 0

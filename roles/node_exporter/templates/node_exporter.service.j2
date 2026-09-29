@@ -12,7 +12,7 @@ Group=node_exporter
 ExecStart=/usr/local/bin/node_exporter \
   --web.listen-address={{ node_exporter_web_listen }} \
   --collector.systemd \
-  --collector.processes
+  --collector.processes{{ (" \\\n  --collector.textfile.directory=" ~ node_exporter_textfile_dir) if node_exporter_textfile_dir else "" }}
 Restart=on-failure
 RestartSec=5
 

@@ -1,0 +1,27 @@
+# Managed by Ansible — do not edit by hand
+modules:
+  http_2xx:
+    prober: http
+    timeout: 10s
+    http:
+      method: GET
+      preferred_ip_protocol: ip4
+      ip_protocol_fallback: false
+      follow_redirects: true
+      valid_status_codes: []   # any 2xx
+      tls_config:
+        insecure_skip_verify: false
+
+  # Sites behind HTTP basic auth (selected per site by the relabel rule in prometheus.yml)
+  http_2xx_auth:
+    prober: http
+    timeout: 10s
+    http:
+      method: GET
+      preferred_ip_protocol: ip4
+      ip_protocol_fallback: false
+      follow_redirects: true
+      valid_status_codes: []
+      basic_auth:
+        username: "{{ blackbox_api_basic_auth_user }}"
+        password: "{{ blackbox_api_basic_auth_password }}"

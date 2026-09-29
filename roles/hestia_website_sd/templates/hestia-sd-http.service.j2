@@ -1,0 +1,19 @@
+# Managed by Ansible — do not edit by hand
+[Unit]
+Description=Serve Hestia website targets for Prometheus http_sd
+After=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 -m http.server {{ hestia_sd_port }} --bind {{ hestia_sd_bind }} --directory {{ hestia_sd_dir }}
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

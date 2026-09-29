@@ -1,0 +1,8 @@
+---
+blackbox_exporter_version: "0.28.0"
+blackbox_exporter_user: blackbox_exporter
+blackbox_exporter_config_dir: /etc/blackbox_exporter
+blackbox_exporter_public_listen: "127.0.0.1:9115"
+blackbox_exporter_internal_listen: "127.0.0.1:9116"
+# Where the Hestia service-discovery endpoint on cp3 publishes the hosts file
+blackbox_exporter_hosts_url: "http://172.16.196.12:9101/hosts"

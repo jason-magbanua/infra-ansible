@@ -1,0 +1,8 @@
+# Managed by Ansible — do not edit by hand
+[Unit]
+Description=Sync the internal blackbox prober hosts file from cp3
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/blackbox-sync-hosts

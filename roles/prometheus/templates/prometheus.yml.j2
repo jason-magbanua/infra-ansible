@@ -39,3 +39,28 @@ scrape_configs:
     static_configs:
       - targets:
           - "{{ cadvisor_ip }}:{{ cadvisor_port }}"
+{% for prober in website_probers %}
+
+  - job_name: websites_{{ prober.vantage }}
+    metrics_path: /probe
+    scrape_interval: {{ website_probe_interval }}
+    scrape_timeout: 15s
+    params:
+      module: [http_2xx]
+    http_sd_configs:
+      - url: {{ website_sd_url }}
+        refresh_interval: 5m
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - source_labels: [site]
+        regex: {{ website_auth_sites | map("regex_escape") | join("|") }}
+        target_label: __param_module
+        replacement: http_2xx_auth
+      - target_label: vantage
+        replacement: {{ prober.vantage }}
+      - target_label: __address__
+        replacement: {{ prober.address }}
+{% endfor %}

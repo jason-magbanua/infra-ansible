@@ -1,0 +1,101 @@
+---
+- name: Create blackbox_exporter system user
+  ansible.builtin.user:
+    name: "{{ blackbox_exporter_user }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: /nonexistent
+    create_home: false
+
+- name: Create config directory
+  ansible.builtin.file:
+    path: "{{ blackbox_exporter_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download blackbox_exporter archive
+  ansible.builtin.get_url:
+    url: "https://github.com/prometheus/blackbox_exporter/releases/download/v{{ blackbox_exporter_version }}/blackbox_exporter-{{ blackbox_exporter_version }}.linux-amd64.tar.gz"
+    dest: "/tmp/blackbox_exporter-{{ blackbox_exporter_version }}.linux-amd64.tar.gz"
+    mode: "0644"
+  register: blackbox_download
+
+- name: Check if blackbox_exporter binary exists
+  ansible.builtin.stat:
+    path: /usr/local/bin/blackbox_exporter
+  register: blackbox_binary
+
+- name: Extract blackbox_exporter binary
+  ansible.builtin.unarchive:
+    src: "/tmp/blackbox_exporter-{{ blackbox_exporter_version }}.linux-amd64.tar.gz"
+    dest: /usr/local/bin
+    remote_src: true
+    include:
+      - "blackbox_exporter-{{ blackbox_exporter_version }}.linux-amd64/blackbox_exporter"
+    extra_opts:
+      - "--strip-components=1"
+    owner: root
+    group: root
+    mode: "0755"
+  when: blackbox_download.changed or not blackbox_binary.stat.exists
+  notify: restart blackbox_exporter
+
+- name: Deploy blackbox.yml
+  ansible.builtin.template:
+    src: blackbox.yml.j2
+    dest: "{{ blackbox_exporter_config_dir }}/blackbox.yml"
+    owner: root
+    group: "{{ blackbox_exporter_user }}"
+    mode: "0640"
+  notify: restart blackbox_exporter
+
+- name: Deploy hosts-sync script (internal prober name resolution)
+  ansible.builtin.template:
+    src: blackbox-sync-hosts.sh.j2
+    dest: /usr/local/bin/blackbox-sync-hosts
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Seed the internal hosts file
+  ansible.builtin.copy:
+    dest: "{{ blackbox_exporter_config_dir }}/internal-hosts"
+    content: |
+      127.0.0.1 localhost
+      ::1 localhost
+    force: false
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy systemd units
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - blackbox_exporter.service
+    - blackbox_exporter_internal.service
+    - blackbox-sync-hosts.service
+    - blackbox-sync-hosts.timer
+  notify:
+    - reload systemd
+    - restart blackbox_exporter
+
+- name: Flush handlers so the units exist
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start blackbox_exporter instances and the hosts-sync timer
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop:
+    - blackbox_exporter
+    - blackbox_exporter_internal
+    - blackbox-sync-hosts.timer

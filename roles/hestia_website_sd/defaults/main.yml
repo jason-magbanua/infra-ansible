@@ -1,0 +1,7 @@
+---
+hestia_sd_dir: /var/lib/hestia-sd
+hestia_sd_bind: "172.16.196.12"
+hestia_sd_port: 9101
+hestia_sd_origin_ip: "172.16.196.12"
+hestia_sd_prometheus_source: "172.16.200.20"
+node_exporter_textfile_dir: /var/lib/node_exporter/textfile

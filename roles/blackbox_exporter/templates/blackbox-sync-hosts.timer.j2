@@ -1,0 +1,10 @@
+# Managed by Ansible — do not edit by hand
+[Unit]
+Description=Sync the internal blackbox prober hosts file every 5 minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target

@@ -25,3 +25,4 @@ grafana_dashboards:
 grafana_custom_dashboards:
   - filename: homelab-overview.json
   - filename: windows-hosts.json
+  - filename: website-monitoring.json

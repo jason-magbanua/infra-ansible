@@ -1,0 +1,22 @@
+---
+# Website monitoring for the sites hosted on cp3 (HestiaCP):
+#  - cp3: target discovery from Hestia (non-suspended domains), PM2 metrics via the
+#    node_exporter textfile collector
+#  - prometheus: two blackbox_exporter instances (public + internal prober)
+# Run setup-prometheus.yml afterwards to render the scrape jobs.
+- name: cp3 target discovery and PM2 metrics
+  hosts: cp3
+  become: true
+  vars:
+    node_exporter_textfile_dir: /var/lib/node_exporter/textfile
+  roles:
+    - node_exporter
+    - hestia_website_sd
+
+- name: Blackbox exporter on the Prometheus host
+  hosts: prometheus
+  become: true
+  vars_files:
+    - "{{ playbook_dir }}/../../../secrets/website-monitoring-vault.yml"
+  roles:
+    - blackbox_exporter
