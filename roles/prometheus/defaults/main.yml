@@ -32,3 +32,7 @@ node_exporter_targets:
     ip: "172.16.200.41"
   - host: streaming-aio
     ip: "172.16.200.50"
+  - host: openwrt1
+    ip: "172.16.1.1"
+  - host: openwrt2
+    ip: "172.16.1.2"

@@ -1,0 +1,12 @@
+---
+# Installs prometheus-node-exporter-lua on the OpenWrt routers/APs so
+# Prometheus can scrape them (targets: roles/prometheus/defaults/main.yml).
+#
+# Run:
+#   ansible-playbook playbooks/openwrt/setup-monitoring.yml [--limit openwrt2]
+
+- name: Install Prometheus node exporter on OpenWrt
+  hosts: openwrt
+  gather_facts: false
+  roles:
+    - openwrt_node_exporter

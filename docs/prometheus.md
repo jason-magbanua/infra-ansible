@@ -9,6 +9,7 @@ Ansible role that installs and configures Prometheus v3 as a native binary (no D
 ```
 Prometheus LXC (10.10.200.20:9090)
   ├── node_exporter  → all LXCs + docker-host (:9100)
+  │                    + openwrt1/openwrt2 (172.16.1.1/.2:9100, Lua exporter)
   ├── traefik        → Traefik metrics (10.10.200.10:8080/metrics)
   └── cadvisor       → Docker host containers (10.10.200.50:8080/metrics)
 ```
@@ -72,7 +73,7 @@ prometheus   ansible_host=10.10.200.20
 
 ### Adding or removing scrape targets
 
-Edit `node_exporter_targets` in `defaults/main.yml` and re-run the playbook. The template loops over this list; no other file needs to change.
+Edit `node_exporter_targets` in `defaults/main.yml` and re-run the playbook. The template loops over this list; no other file needs to change. OpenWrt targets also need `playbooks/openwrt/setup-monitoring.yml` — see [openwrt.md](openwrt.md).
 
 ---
 

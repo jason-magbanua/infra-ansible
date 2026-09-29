@@ -34,6 +34,8 @@ ansible/
 │   │   ├── setup-grafana.yml       # Grafana dashboards
 │   ├── k8s_lab/                    # External k8s lab nodes
 │   │   └── setup-k8s-lab.yml       # Bootstrap all k8s lab nodes
+│   ├── openwrt/                    # OpenWrt routers/APs (metrics exporter)
+│   │   └── setup-monitoring.yml
 │   └── vyos/                       # VyOS router configuration
 │       ├── vyos.yml
 │       └── vars/
@@ -44,6 +46,7 @@ ansible/
 │   ├── prometheus/                 # Prometheus v3 install + config role
 │   ├── grafana/                    # Grafana install + provisioning role
 │   ├── node_exporter/              # Prometheus Node Exporter (all hosts)
+│   ├── openwrt_node_exporter/      # prometheus-node-exporter-lua on OpenWrt (raw + opkg/uci, no Python)
 │   ├── cadvisor/                   # cAdvisor Docker Compose stack
 │   ├── k3s/                        # k3s server + agent install, NFS data mount
 │   ├── k8s_common/                 # All k8s lab nodes: /etc/hosts, swap, containerd, kubeadm/kubelet/kubectl
@@ -113,8 +116,9 @@ Host groups:
 | LXC workloads   | `LXC/setup-traefik.yml`         | [docs/traefik.md](docs/traefik.md)             |
 | LXC workloads   | `LXC/setup-prometheus.yml`      | [docs/prometheus.md](docs/prometheus.md)       |
 | LXC workloads   | `LXC/setup-grafana.yml`         | [docs/grafana.md](docs/grafana.md)             |
-| All hosts       | `site.yml`                      | applies `common` to all hosts; `node_exporter` to all except `hosts_k8s_lab` |
+| All hosts       | `site.yml`                      | applies `common` to all hosts; `node_exporter` to all except `hosts_k8s_lab`, `vyos` and `openwrt` |
 | k8s lab         | `k8s_lab/setup-k8s-lab.yml`     | [docs/k8s-lab.md](docs/k8s-lab.md)             |
+| OpenWrt routers | `openwrt/setup-monitoring.yml`  | [docs/openwrt.md](docs/openwrt.md)             |
 | VyOS router     | `vyos/vyos.yml`                 | [docs/vyos.md](docs/vyos.md)                   |
 
 Playbooks that load secrets files:

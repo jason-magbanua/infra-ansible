@@ -1,0 +1,7 @@
+---
+# OpenWrt has no Python, so this role uses ansible.builtin.raw with explicit
+# guards (opkg list-installed / uci get) to stay idempotent.
+openwrt_node_exporter_package: prometheus-node-exporter-lua
+openwrt_node_exporter_port: 9100
+# UCI network name to bind to (the exporter listens on that interface only)
+openwrt_node_exporter_interface: lan

@@ -1,0 +1,38 @@
+---
+- name: Check whether the exporter package is installed
+  ansible.builtin.raw: "opkg list-installed {{ openwrt_node_exporter_package }} | grep -c ^{{ openwrt_node_exporter_package }}"
+  register: openwrt_ne_installed
+  changed_when: false
+  failed_when: false
+
+- name: Install the exporter package
+  ansible.builtin.raw: "opkg update && opkg install {{ openwrt_node_exporter_package }}"
+  when: openwrt_ne_installed.stdout | trim != "1"
+  changed_when: true
+
+- name: Read current exporter UCI settings
+  ansible.builtin.raw: "uci -q get prometheus-node-exporter-lua.main.listen_interface; uci -q get prometheus-node-exporter-lua.main.listen_port"
+  register: openwrt_ne_uci
+  changed_when: false
+  failed_when: false
+
+- name: Set exporter UCI settings
+  ansible.builtin.raw: >-
+    uci set prometheus-node-exporter-lua.main.listen_interface={{ openwrt_node_exporter_interface }} &&
+    uci set prometheus-node-exporter-lua.main.listen_port={{ openwrt_node_exporter_port }} &&
+    uci commit prometheus-node-exporter-lua &&
+    /etc/init.d/prometheus-node-exporter-lua restart
+  when: openwrt_ne_uci.stdout_lines | map("trim") | list != [openwrt_node_exporter_interface, openwrt_node_exporter_port | string]
+  changed_when: true
+
+- name: Enable the exporter at boot
+  ansible.builtin.raw: "/etc/init.d/prometheus-node-exporter-lua enabled || /etc/init.d/prometheus-node-exporter-lua enable"
+  register: openwrt_ne_enable
+  changed_when: openwrt_ne_enable.rc != 0 or openwrt_ne_enable.stdout | trim | length > 0
+  failed_when: false
+
+- name: Start the exporter if not running
+  ansible.builtin.raw: "netstat -ln | grep -q :{{ openwrt_node_exporter_port }} || /etc/init.d/prometheus-node-exporter-lua start"
+  register: openwrt_ne_start
+  changed_when: openwrt_ne_start.stdout | trim | length > 0 or "start" in openwrt_ne_start.stderr
+  failed_when: false
