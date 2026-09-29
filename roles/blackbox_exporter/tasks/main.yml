@@ -51,25 +51,6 @@
     mode: "0640"
   notify: restart blackbox_exporter
 
-- name: Deploy hosts-sync script (internal prober name resolution)
-  ansible.builtin.template:
-    src: blackbox-sync-hosts.sh.j2
-    dest: /usr/local/bin/blackbox-sync-hosts
-    owner: root
-    group: root
-    mode: "0755"
-
-- name: Seed the internal hosts file
-  ansible.builtin.copy:
-    dest: "{{ blackbox_exporter_config_dir }}/internal-hosts"
-    content: |
-      127.0.0.1 localhost
-      ::1 localhost
-    force: false
-    owner: root
-    group: root
-    mode: "0644"
-
 - name: Deploy systemd units
   ansible.builtin.template:
     src: "{{ item }}.j2"
@@ -79,9 +60,6 @@
     mode: "0644"
   loop:
     - blackbox_exporter.service
-    - blackbox_exporter_internal.service
-    - blackbox-sync-hosts.service
-    - blackbox-sync-hosts.timer
   notify:
     - reload systemd
     - restart blackbox_exporter
@@ -89,7 +67,7 @@
 - name: Flush handlers so the units exist
   ansible.builtin.meta: flush_handlers
 
-- name: Enable and start blackbox_exporter instances and the hosts-sync timer
+- name: Enable and start blackbox_exporter
   ansible.builtin.systemd:
     name: "{{ item }}"
     enabled: true
@@ -97,5 +75,3 @@
     daemon_reload: true
   loop:
     - blackbox_exporter
-    - blackbox_exporter_internal
-    - blackbox-sync-hosts.timer

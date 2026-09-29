@@ -58,12 +58,11 @@ windows_exporter_targets:
     ip: "172.16.196.27"
 
 # Website monitoring: cp3 publishes its non-suspended Hestia domains (http_sd) and
-# two blackbox_exporter instances on this host probe them (see roles/blackbox_exporter)
+# a blackbox_exporter instance on this host probes them (see roles/blackbox_exporter)
 website_sd_url: "http://172.16.196.12:9101/targets.json"
 website_probe_interval: 30s
 website_probers:
   - { vantage: public,   address: "127.0.0.1:9115" }   # public DNS: Cloudflare / home NAT / WAN
-  - { vantage: internal, address: "127.0.0.1:9116" }   # resolves domains to cp3 directly
 
 # Sites (Hestia domain names) probed with the authenticated blackbox module
 website_auth_sites:

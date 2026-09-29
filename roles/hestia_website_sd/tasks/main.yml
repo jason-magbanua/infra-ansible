@@ -30,11 +30,11 @@
     content: |
       # Managed by Ansible
       PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-      */5 * * * * root /usr/local/bin/hestia-website-sd {{ hestia_sd_dir }} {{ hestia_sd_origin_ip }}
+      */5 * * * * root /usr/local/bin/hestia-website-sd {{ hestia_sd_dir }}
       * * * * * root /usr/local/bin/pm2-textfile {{ node_exporter_textfile_dir }}
 
 - name: Generate the target list now
-  ansible.builtin.command: /usr/local/bin/hestia-website-sd {{ hestia_sd_dir }} {{ hestia_sd_origin_ip }}
+  ansible.builtin.command: /usr/local/bin/hestia-website-sd {{ hestia_sd_dir }}
   changed_when: false
 
 - name: Generate the PM2 metrics now

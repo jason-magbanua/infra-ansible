@@ -9,4 +9,3 @@
     state: restarted
   loop:
     - blackbox_exporter
-    - blackbox_exporter_internal
