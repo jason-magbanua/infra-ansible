@@ -24,3 +24,4 @@ grafana_dashboards:
 # Dashboards authored in this repo (files/dashboards/), copied as-is — no grafana.com download
 grafana_custom_dashboards:
   - filename: homelab-overview.json
+  - filename: windows-hosts.json
