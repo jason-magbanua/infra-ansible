@@ -8,6 +8,7 @@ prometheus_port: 9090
 
 traefik_ip: "172.16.200.10"
 traefik_metrics_port: 8080
+pve3_traefik_ip: "172.16.196.80"
 
 # streaming-aio — placeholder until cadvisor is deployed there (port TBD, 8080 is
 # already used by qbittorrent on this host). Scrape will show "down" until then.
@@ -38,6 +39,8 @@ node_exporter_targets:
     ip: "172.16.1.2"
   - host: pve3-ovh
     ip: "51.79.177.125"
+  - host: opnsense3
+    ip: "172.16.196.1"
   - host: cp3
     ip: "172.16.196.12"
   - host: pve3-traefik

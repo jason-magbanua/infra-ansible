@@ -29,6 +29,10 @@ scrape_configs:
     static_configs:
       - targets:
           - "{{ traefik_ip }}:{{ traefik_metrics_port }}"
+      - targets:
+          - "{{ pve3_traefik_ip }}:{{ traefik_metrics_port }}"
+        labels:
+          instance: "pve3-traefik:{{ traefik_metrics_port }}"
 
   - job_name: cadvisor
     metrics_path: /metrics
