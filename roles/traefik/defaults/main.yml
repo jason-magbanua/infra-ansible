@@ -14,8 +14,11 @@ vaultwarden_port: 80
 wikijs_ip: "10.10.200.43"
 wikijs_port: 3000
 
-grafana_ip: "10.10.200.22"
+grafana_ip: "172.16.200.22"
 grafana_port: 3000
+
+prometheus_ip: "172.16.200.20"
+prometheus_port: 9090
 
 plex_ip: "172.16.200.50"
 plex_port: 32400

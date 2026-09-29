@@ -1,0 +1,27 @@
+---
+# Enables VyOS's built-in Prometheus node-exporter (the node-exporter package
+# already ships in the image; this just turns it on and binds it to the
+# PVE1-SERVERS address so Prometheus can scrape it).
+#
+# Deliberately standalone — playbooks/vyos/vyos.yml is stale (pre-dates the
+# 172.16.200.0/24 renumber) and is being reworked separately. This playbook
+# only touches "service monitoring", nothing else on the router.
+#
+# Run:
+#   ansible-playbook playbooks/vyos/setup-monitoring.yml
+
+- name: Enable VyOS Prometheus node-exporter
+  hosts: vyos
+  gather_facts: false
+
+  vars:
+    vyos_node_exporter_listen_address: 172.16.200.1
+    vyos_node_exporter_port: 9100
+
+  tasks:
+    - name: Configure Prometheus node-exporter
+      vyos.vyos.vyos_config:
+        lines:
+          - "set service monitoring prometheus node-exporter listen-address {{ vyos_node_exporter_listen_address }}"
+          - "set service monitoring prometheus node-exporter port {{ vyos_node_exporter_port }}"
+        save: true

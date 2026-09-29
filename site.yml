@@ -4,7 +4,7 @@
 # Limit to a subset: ansible-playbook site.yml --limit prometheus
 
 - name: Apply common configuration
-  hosts: all
+  hosts: all:!vyos
   become: true
   gather_facts: true
   roles:
