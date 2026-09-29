@@ -36,3 +36,20 @@ node_exporter_targets:
     ip: "172.16.1.1"
   - host: openwrt2
     ip: "172.16.1.2"
+  - host: pve3-ovh
+    ip: "51.79.177.125"
+  - host: cp3
+    ip: "172.16.196.12"
+  - host: pve3-traefik
+    ip: "172.16.196.80"
+  - host: docker-vaultwarden
+    ip: "172.16.196.100"
+  - host: docker-minecraft
+    ip: "172.16.196.200"
+
+windows_exporter_port: 9182
+windows_exporter_targets:
+  - host: kingslayermu
+    ip: "172.16.196.24"
+  - host: ancientmu
+    ip: "172.16.196.27"

@@ -1,0 +1,71 @@
+---
+# node_exporter on pve3.ovh (public IP, so 9100 is firewalled to the home NAT
+# address that Prometheus scrapes from) and its Linux containers.
+- name: Restrict node_exporter port on the pve3.ovh host
+  hosts: pve3_ovh
+  become: true
+  vars:
+    prometheus_scrape_source: "113.19.181.106"
+  tasks:
+    - name: Deploy nftables rules for node_exporter
+      ansible.builtin.copy:
+        dest: /etc/node-exporter-nft.conf
+        mode: "0644"
+        content: |
+          # Managed by Ansible
+          table inet node_exporter {
+            chain input {
+              type filter hook input priority -5; policy accept;
+              tcp dport {{ node_exporter_port | default(9100) }} ip saddr != { {{ prometheus_scrape_source }}, 127.0.0.1 } drop
+              tcp dport {{ node_exporter_port | default(9100) }} meta nfproto ipv6 iifname != "lo" drop
+            }
+          }
+      register: ne_rules
+
+    - name: Deploy nftables unit for node_exporter rules
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/node-exporter-nft.service
+        mode: "0644"
+        content: |
+          # Managed by Ansible
+          [Unit]
+          Description=nftables rules restricting node_exporter
+          Before=node_exporter.service
+          After=network-pre.target
+
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          ExecStartPre=-/usr/sbin/nft delete table inet node_exporter
+          ExecStart=/usr/sbin/nft -f /etc/node-exporter-nft.conf
+          ExecStop=/usr/sbin/nft delete table inet node_exporter
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Enable and (re)start nftables unit
+      ansible.builtin.systemd:
+        name: node-exporter-nft
+        enabled: true
+        state: "{{ (ne_rules.changed) | ternary('restarted', 'started') }}"
+        daemon_reload: true
+
+- name: Install node_exporter
+  hosts: pve3_ovh,pve3_ovh_containers
+  become: true
+  roles:
+    - node_exporter
+
+- name: Allow Prometheus through the HestiaCP firewall on cp3
+  hosts: cp3
+  become: true
+  tasks:
+    - name: Check for existing Prometheus rule
+      ansible.builtin.shell: grep -q "COMMENT=.PROMETHEUS." /usr/local/hestia/data/firewall/rules.conf
+      register: hestia_prom_rule
+      changed_when: false
+      failed_when: false
+
+    - name: Add Hestia firewall rule for node_exporter
+      ansible.builtin.command: /usr/local/hestia/bin/v-add-firewall-rule ACCEPT 172.16.200.20 9100 TCP PROMETHEUS
+      when: hestia_prom_rule.rc != 0
