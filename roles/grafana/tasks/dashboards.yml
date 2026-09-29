@@ -54,3 +54,12 @@
     regexp: '"datasource":\s*"\$\{DS_[A-Z0-9_]+\}"'
     replace: '"datasource": "{{ item.datasource_uid }}"'
   loop: "{{ grafana_dashboards }}"
+
+- name: Copy custom dashboard JSON files to target host
+  ansible.builtin.copy:
+    src: "dashboards/{{ item.filename }}"
+    dest: "{{ grafana_dashboard_dir }}/{{ item.filename }}"
+    owner: grafana
+    group: grafana
+    mode: "0640"
+  loop: "{{ grafana_custom_dashboards }}"

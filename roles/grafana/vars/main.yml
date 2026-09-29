@@ -20,3 +20,7 @@ grafana_dashboards:
     id: 14282
     datasource_input: DS_PROMETHEUS
     datasource_uid: prometheus
+
+# Dashboards authored in this repo (files/dashboards/), copied as-is — no grafana.com download
+grafana_custom_dashboards:
+  - filename: homelab-overview.json
