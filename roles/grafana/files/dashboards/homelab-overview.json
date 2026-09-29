@@ -34,7 +34,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "count(up{job=\"node_exporter\"}==1)",
+          "expr": "count(up{job=~\"node_exporter|windows_exporter\"}==1)",
           "refId": "A",
           "legendFormat": "",
           "format": "time_series",
@@ -92,7 +92,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "count(up{job=\"node_exporter\"}==0) or vector(0)",
+          "expr": "count(up{job=~\"node_exporter|windows_exporter\"}==0) or vector(0)",
           "refId": "A",
           "legendFormat": "",
           "format": "time_series",
